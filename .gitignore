@@ -1,0 +1,30 @@
+# Streamlit : versionner uniquement config.toml (secrets + JSON restent locaux)
+.streamlit/*
+!.streamlit/config.toml
+
+# Secrets hors Streamlit
+config/secrets.toml
+.env
+.env.*
+!.env.example
+
+# Compte de service / clés (autres emplacements)
+config/keys/*.json
+**/service-account*.json
+**/*-credentials.json
+*credentials*.json
+
+# Outils / OS
+__pycache__/
+*.py[cod]
+.Python
+.venv/
+venv/
+.idea/
+.vscode/
+*.log
+
+# Expo / Node (quand le dossier mobile sera ajouté)
+node_modules/
+.expo/
+dist/

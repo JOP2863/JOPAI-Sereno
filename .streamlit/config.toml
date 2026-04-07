@@ -1,0 +1,15 @@
+[server]
+# Indispensable pour l'affichage des images et audios du dossier /static/
+enableStaticServing = true
+
+[client]
+# SÉRÉNO : afficher la navigation multi-pages (Home, Tests connexions, etc.)
+showSidebarNavigation = true
+
+[theme]
+# Rappel des couleurs du Design System MARPA
+primaryColor = "#2F3640"
+backgroundColor = "#F5F5F2"
+secondaryBackgroundColor = "#E0E0E0"
+textColor = "#2F3640"
+font = "serif"
