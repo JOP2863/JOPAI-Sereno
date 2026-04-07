@@ -1,4 +1,5 @@
 pyproject.toml
+setup.py
 jopai_sereno.egg-info/PKG-INFO
 jopai_sereno.egg-info/SOURCES.txt
 jopai_sereno.egg-info/dependency_links.txt

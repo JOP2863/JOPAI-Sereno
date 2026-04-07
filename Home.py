@@ -7,12 +7,45 @@ Navigation : **Projet** (outillage) · **Prototype** (Client / Artisan / Propri�
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
-_REPO = Path(__file__).resolve().parent
-if str(_REPO) not in sys.path:
-    sys.path.insert(0, str(_REPO))
+
+def _ensure_sereno_core_importable() -> None:
+    """
+    Ajoute la racine du dépôt sur sys.path si `sereno_core` n’est pas déjà importable
+    (pip install . / -e . peut échouer ou différer selon l’hébergeur).
+    """
+    try:
+        import sereno_core  # noqa: F401
+        return
+    except ModuleNotFoundError:
+        pass
+    here = Path(__file__).resolve().parent
+    candidates: list[Path] = []
+    env_root = (os.environ.get("JOPAI_SERENO_REPO_ROOT") or "").strip()
+    if env_root:
+        candidates.append(Path(env_root))
+    candidates.extend([here, here.parent, Path.cwd()])
+    seen: set[Path] = set()
+    for p in candidates:
+        try:
+            rp = p.resolve()
+        except OSError:
+            continue
+        if rp in seen:
+            continue
+        seen.add(rp)
+        if not (rp / "sereno_core" / "__init__.py").is_file():
+            continue
+        s = str(rp)
+        if s not in sys.path:
+            sys.path.insert(0, s)
+        return
+
+
+_ensure_sereno_core_importable()
 
 import streamlit as st
 

@@ -3,3 +3,4 @@ Name: jopai-sereno
 Version: 0.1.0
 Summary: SÉRÉNO — pilote Streamlit (JOPAI BTP)
 Requires-Python: >=3.10
+Dynamic: requires-python
