@@ -21,6 +21,7 @@ from sereno_core.proto_state import (
     p_get,
     p_set,
     reset_client_journey,
+    sync_session_sheet,
 )
 from sereno_core.proto_ui import proto_page_start, reassurance, step_indicator
 from sereno_core.urgence_ambiance import JOURNEY_TAGLINE
@@ -61,4 +62,5 @@ for code, label in URGENCE_LABELS.items():
         clear_client_branch_after_urgence_change()
         p_set("urgence_type", code)
         log_event("urgence_choisie", urgence=code, session_id=p_get("session_id"))
+        sync_session_sheet({"type_code": code, "statut": "URGENCE_CHOISIE"})
         st.switch_page("pages/5_Proto_Client_informations.py")

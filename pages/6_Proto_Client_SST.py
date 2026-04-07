@@ -14,7 +14,7 @@ if str(_REPO) not in sys.path:
 import streamlit as st
 
 from sereno_core.proto_checklists import CHECKLISTS, URGENCE_LABELS
-from sereno_core.proto_state import log_event, p_get, p_set
+from sereno_core.proto_state import log_event, p_get, p_set, sync_session_sheet
 from sereno_core.proto_ui import proto_page_start, reassurance, step_indicator
 
 proto_page_start(
@@ -71,9 +71,11 @@ if items and all_ok:
         p_set("_sst_mark_complete", True)
         p_set("sst_validated", True)
         log_event("sst_validee", session_id=p_get("session_id"), urgence=ut)
+        sync_session_sheet({"type_code": ut, "statut": "SST_VALIDE"})
         st.switch_page("pages/7_Proto_Client_file_visio.py")
     elif st.button("Continuer vers la mise en relation", type="primary", use_container_width=True):
         p_set("sst_validated", True)
+        sync_session_sheet({"type_code": ut, "statut": "SST_VALIDE"})
         st.switch_page("pages/7_Proto_Client_file_visio.py")
 elif items and not all_ok:
     p_set("_sst_mark_complete", False)

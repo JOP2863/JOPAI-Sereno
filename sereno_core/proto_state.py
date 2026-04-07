@@ -87,6 +87,36 @@ def log_event(action: str, **fields: Any) -> None:
     p_set("events", events)
 
 
+def sync_session_sheet(updates: dict[str, Any | None]) -> None:
+    """
+    Met à jour l’onglet Google Sheets **Sessions** (une ligne par `session_id`).
+    Silencieux en cas d’erreur ; avec `debug_sessions_sheet = true` dans les secrets, affiche un avertissement.
+    """
+    sid = p_get("session_id")
+    if not sid:
+        return
+    try:
+        repo = Path(__file__).resolve().parent.parent
+        from sereno_core.sheets_sessions_write import try_upsert_session_row
+
+        ok, msg = try_upsert_session_row(
+            repo,
+            dict(st.secrets),
+            session_id=str(sid),
+            updates=updates,
+        )
+        if not ok:
+            dbg = False
+            try:
+                dbg = bool(st.secrets.get("debug_sessions_sheet"))
+            except Exception:
+                dbg = False
+            if dbg:
+                st.warning(f"[Sessions Sheets] {msg}")
+    except Exception:
+        pass
+
+
 def reset_client_journey() -> None:
     """Remet le parcours client à zéro (garde les événements ; recharge les experts depuis Sheets)."""
     keep = {_k("events")}

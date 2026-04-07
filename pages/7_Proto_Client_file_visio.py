@@ -4,7 +4,9 @@ Prototype client — file d’attente + mise en relation (simulation).
 
 from __future__ import annotations
 
+import re
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 _REPO = Path(__file__).resolve().parent.parent
@@ -15,7 +17,7 @@ import streamlit as st
 
 from sereno_core.proto_checklists import URGENCE_LABELS
 from sereno_core.proto_helpers import pick_expert_for_urgence
-from sereno_core.proto_state import log_event, p_get, p_set
+from sereno_core.proto_state import log_event, p_get, p_set, sync_session_sheet
 from sereno_core.proto_ui import proto_page_start, reassurance, step_indicator
 from sereno_core.sheets_experts import canonicalize_type_list
 
@@ -109,6 +111,13 @@ if assigned.get("id") != p_get("_audit_last_expert_id"):
         expert_nom=assigned.get("nom"),
     )
     p_set("_audit_last_expert_id", assigned.get("id"))
+    sync_session_sheet(
+        {
+            "expert_id": str(assigned.get("id") or ""),
+            "type_code": ut,
+            "statut": "EXPERT_ASSIGNE",
+        }
+    )
 
 st.success(
     f"**{assigned.get('nom', 'Expert')}** est sélectionné pour votre demande "
@@ -130,7 +139,19 @@ with st.expander("Voir l’ordre d’appel des experts (démo)"):
 st.info("En production : file temps réel, notification push / SMS selon réglages.")
 
 if st.button("Ouvrir la salle de visio", type="primary"):
+    _sid = str(p_get("session_id") or "")
+    _room = re.sub(r"[^a-zA-Z0-9]", "", f"Sereno{_sid}")[:48] or "SerenoDemo"
+    _jitsi = f"https://meet.jit.si/{_room}#config.prejoinPageEnabled=false"
+    _debut = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     log_event("visio_debut", session_id=p_get("session_id"))
+    sync_session_sheet(
+        {
+            "debut_visio": _debut,
+            "room_url": _jitsi,
+            "type_code": ut,
+            "statut": "VISIO_DEMARREE",
+        }
+    )
     st.switch_page("pages/8_Proto_Client_visio.py")
 
 if st.button("← Retour"):

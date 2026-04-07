@@ -15,7 +15,7 @@ if str(_REPO) not in sys.path:
 import streamlit as st
 
 from sereno_core.proto_checklists import URGENCE_LABELS
-from sereno_core.proto_state import log_event, p_get, p_set
+from sereno_core.proto_state import log_event, p_get, p_set, sync_session_sheet
 from sereno_core.proto_ui import (
     proto_page_start,
     proto_processing_pause,
@@ -35,7 +35,10 @@ if not p_get("payment_done"):
     st.warning("Complétez d’abord l’étape **Paiement simulé**.")
     st.stop()
 
-reassurance("Les réponses sont agrégées dans les tableaux de suivi (démo navigateur).")
+reassurance(
+    "Les réponses restent dans le **journal de démo** (navigateur) et mettent à jour l’onglet **Sessions** "
+    "du classeur Google si `gsheet_id` et le compte de service sont configurés."
+)
 
 stars = render_interactive_stars()
 if stars < 1:
@@ -73,6 +76,17 @@ if st.button("Envoyer mon avis", type="primary"):
                 commentaire=((comment or "").strip()[:500]),
                 urgence=ut,
                 type_intervention=URGENCE_LABELS.get(ut, ut),
+            )
+            _cmt = (comment or "").strip()
+            _notes = f"★{stars}/5 NPS={nps}"
+            if _cmt:
+                _notes += f" | {_cmt[:400]}"
+            sync_session_sheet(
+                {
+                    "notes_cloture": _notes,
+                    "type_code": ut,
+                    "statut": "CLOTUREE_AVIS",
+                }
             )
         ex = p_get("assigned_expert") or {}
         ex_mail = str(ex.get("email") or "").strip()

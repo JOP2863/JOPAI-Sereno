@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import re
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 _REPO = Path(__file__).resolve().parent.parent
@@ -15,7 +16,7 @@ if str(_REPO) not in sys.path:
 import streamlit as st
 import streamlit.components.v1 as components
 
-from sereno_core.proto_state import log_event, p_get, p_set
+from sereno_core.proto_state import log_event, p_get, p_set, sync_session_sheet
 
 def _secret_get(key: str) -> str:
     try:
@@ -110,4 +111,14 @@ with c2:
         p_set("visio_demo_mic", mic)
         p_set("visio_demo_torch", torch)
         log_event("visio_fin", session_id=p_get("session_id"))
+        _room_url = (_integrated or jitsi_url).strip()
+        _fin = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        sync_session_sheet(
+            {
+                "fin_visio": _fin,
+                "room_url": _room_url,
+                "type_code": p_get("urgence_type"),
+                "statut": "VISIO_TERMINEE",
+            }
+        )
         st.switch_page("pages/9_Proto_Client_paiement.py")

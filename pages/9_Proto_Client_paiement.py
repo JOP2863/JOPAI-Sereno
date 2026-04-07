@@ -15,7 +15,7 @@ if str(_REPO) not in sys.path:
 import streamlit as st
 
 from sereno_core.proto_helpers import STRIPE_TEST_CARD_SUCCESS, validate_card_fields
-from sereno_core.proto_state import log_event, p_get, p_set
+from sereno_core.proto_state import log_event, p_get, p_set, sync_session_sheet
 from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
 
 FORFAIT_EUR = 50
@@ -81,6 +81,13 @@ if ok:
                 montant_eur=FORFAIT_EUR,
                 mode="SIMULE",
                 carte_test=numero[:4] + "…",
+            )
+            sync_session_sheet(
+                {
+                    "prix_centimes_factures": str(int(FORFAIT_EUR * 100)),
+                    "type_code": p_get("urgence_type"),
+                    "statut": "PAIEMENT_PILOTE",
+                }
             )
         st.success("Paiement enregistré pour la session pilote. Merci !")
         st.switch_page("pages/10_Proto_Client_satisfaction.py")

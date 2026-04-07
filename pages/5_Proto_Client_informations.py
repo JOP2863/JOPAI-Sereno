@@ -23,7 +23,7 @@ _URG_BAND = {
     "CHAUFF": ("#00695c", "#e0f2f1", "#004d40"),
     "SERR": ("#455a64", "#eceff1", "#37474f"),
 }
-from sereno_core.proto_state import log_event, p_get, p_set
+from sereno_core.proto_state import log_event, p_get, p_set, sync_session_sheet
 from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
 
 proto_page_start(
@@ -95,6 +95,18 @@ if submitted:
             urgence=ut,
             type_intervention=URGENCE_LABELS.get(ut, ut),
             prenom=p_get("client_prenom"),
+        )
+        em = str(p_get("client_email") or "").strip()
+        contact = str(p_get("client_tel") or "").strip()
+        if em:
+            contact = f"{contact} | {em}" if contact else em
+        sync_session_sheet(
+            {
+                "user_pseudo": str(p_get("client_prenom") or ""),
+                "user_contact": contact,
+                "type_code": ut,
+                "statut": "INFOS_SAISIES",
+            }
         )
     st.switch_page("pages/6_Proto_Client_SST.py")
 
