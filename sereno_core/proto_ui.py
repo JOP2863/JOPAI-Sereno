@@ -103,7 +103,7 @@ def render_nps_buttons(*, state_key: str = "nps_selected") -> int | None:
         "**Recommanderiez-vous SÉRÉNO à un proche ?** "
         "*(note 0 à 10 : 0–6 insatisfait, 7–8 correct, 9–10 très satisfait — couleurs rouge / jaune / vert)*"
     )
-    st.caption("0 = pas du tout · 10 = tout à fait · Si tout s’est bien passé, **9 ou 10** aide vraiment le projet.")
+    st.caption("Échelle de **0** (pas du tout) à **10** (tout à fait).")
     _l, row, _r = st.columns([0.04, 0.92, 0.04])
     with row:
         cols = st.columns(11)

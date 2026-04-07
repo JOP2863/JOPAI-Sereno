@@ -36,8 +36,8 @@ if not p_get("payment_done"):
     st.stop()
 
 reassurance(
-    "Les réponses restent dans le **journal de démo** (navigateur) et mettent à jour l’onglet **Sessions** "
-    "du classeur Google si `gsheet_id` et le compte de service sont configurés."
+    "Vos réponses sont enregistrées dans le **journal de session** ; elles peuvent aussi alimenter le classeur "
+    "Google (**Sessions**) si celui-ci est relié à l’application."
 )
 
 stars = render_interactive_stars()
@@ -123,9 +123,7 @@ if st.button("Envoyer mon avis", type="primary"):
             "À tout moment, vous pouvez nous contacter via l’adresse ci-dessous."
         )
         st.markdown(
-            f"<p>Écrire à : <strong><a href=\"{mail_href}\">jopai-sereno@hotmail.com</a></strong><br/>"
-            "<small>Pilote : le message est adressé à la boîte de test opérationnelle ; "
-            "une copie peut être proposée vers l’expert démo si une adresse est renseignée.</small></p>",
+            f"<p>Écrire à : <strong><a href=\"{mail_href}\">jopai-sereno@hotmail.com</a></strong></p>",
             unsafe_allow_html=True,
         )
         st.markdown(

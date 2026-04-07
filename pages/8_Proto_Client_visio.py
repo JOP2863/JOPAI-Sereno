@@ -28,7 +28,7 @@ from sereno_core.proto_ui import proto_page_start, reassurance, step_indicator
 
 proto_page_start(
     title="Visio-assistance",
-    subtitle="Salle de session : aperçu **réel** (Jitsi Meet, démo) + lien technique pour intégration Daily / Twilio.",
+    subtitle="Échange vidéo avec l’expert.",
 )
 step_indicator(5, 7)
 

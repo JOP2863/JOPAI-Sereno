@@ -87,10 +87,17 @@ def log_event(action: str, **fields: Any) -> None:
     p_set("events", events)
 
 
+def _sheet_write_debug() -> bool:
+    try:
+        return bool(st.secrets.get("debug_sheets") or st.secrets.get("debug_sessions_sheet"))
+    except Exception:
+        return False
+
+
 def sync_session_sheet(updates: dict[str, Any | None]) -> None:
     """
     Met à jour l’onglet Google Sheets **Sessions** (une ligne par `session_id`).
-    Silencieux en cas d’erreur ; avec `debug_sessions_sheet = true` dans les secrets, affiche un avertissement.
+    Silencieux en cas d’erreur ; `debug_sheets` ou `debug_sessions_sheet` = true → avertissement.
     """
     sid = p_get("session_id")
     if not sid:
@@ -105,14 +112,38 @@ def sync_session_sheet(updates: dict[str, Any | None]) -> None:
             session_id=str(sid),
             updates=updates,
         )
-        if not ok:
-            dbg = False
-            try:
-                dbg = bool(st.secrets.get("debug_sessions_sheet"))
-            except Exception:
-                dbg = False
-            if dbg:
-                st.warning(f"[Sessions Sheets] {msg}")
+        if not ok and _sheet_write_debug():
+            st.warning(f"[Sessions Sheets] {msg}")
+    except Exception:
+        pass
+
+
+def append_paiement_sheet_row(
+    *,
+    montant_centimes: int,
+    mode_paiement: str,
+    statut: str = "SIMULE",
+    notes: str = "",
+) -> None:
+    """Ajoute une ligne dans l’onglet **Paiements** (best-effort, silencieux sauf `debug_sheets`)."""
+    sid = p_get("session_id")
+    if not sid:
+        return
+    try:
+        repo = Path(__file__).resolve().parent.parent
+        from sereno_core.sheets_paiements_write import try_append_paiement_row
+
+        ok, msg = try_append_paiement_row(
+            repo,
+            dict(st.secrets),
+            session_id=str(sid),
+            montant_centimes=int(montant_centimes),
+            mode_paiement=mode_paiement,
+            statut=statut,
+            notes=notes,
+        )
+        if not ok and _sheet_write_debug():
+            st.warning(f"[Paiements Sheets] {msg}")
     except Exception:
         pass
 

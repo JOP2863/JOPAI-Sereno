@@ -1,6 +1,22 @@
 """
 Schéma des onglets Google Sheets (en-têtes + lignes de graine).
 Source de vérité pour le script scripts/init_google_sheet.py et pour le CDC § 3.6.
+
+**Branchement code (pilote Streamlit)**
+
+| Onglet | Lecture / écriture |
+|--------|--------------------|
+| **Experts** | Lecture : liste des artisans (`sheets_experts.load_experts_from_sheets`). |
+| **Sessions** | Écriture upsert par `session_id` (`sheets_sessions_write`, appels `sync_session_sheet`). |
+| **Paiements** | Écriture append à chaque validation paiement (`sheets_paiements_write`, `append_paiement_sheet_row`). |
+| **Disponibilite_Mois** | Écriture + lecture pages admin 16/17 (`sheets_disponibilite_write`). |
+| **Connexions_Test** | Écriture / lecture page Tests connexions. |
+| **Config** | Non lu par l’app (forfait etc. encore en code Python). |
+| **Types_Urgence** | Non lu (libellés / ordre dans `proto_checklists`). |
+| **Checklist_SST** | Non lu (questions dans `proto_checklists`). |
+| **Regles_Moteur** | Non lu (règles encore en code). |
+| **Creneau_Astreinte** | Non branché (saisie / moteur à venir). |
+| **Indisponibilite_Exception** | Non branché (saisie / moteur à venir). |
 """
 
 from __future__ import annotations

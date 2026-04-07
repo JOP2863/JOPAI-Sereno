@@ -124,19 +124,10 @@ st.success(
     f"({URGENCE_LABELS.get(ut, ut)}). "
     f"*Priorité d’appel n°{assigned.get('ordre', '—')} dans la file pour ce type d’urgence.*"
 )
-noms = ", ".join(
-    f"**{a.get('nom', '?')}** ({', '.join(a.get('types', []))})"
-    for a in sorted(artisans, key=lambda x: int(x.get("ordre", 99)))
-)
-st.caption(
-    f"Experts référencés (source : **Google Sheets** si configuré, sinon démo locale) — {noms}."
-)
 
 with st.expander("Voir l’ordre d’appel des experts (démo)"):
     for a in elig:
         st.write(f"{a.get('ordre', '—')}. **{a.get('nom')}** — {', '.join(a.get('types', []))}")
-
-st.info("En production : file temps réel, notification push / SMS selon réglages.")
 
 if st.button("Ouvrir la salle de visio", type="primary"):
     _sid = str(p_get("session_id") or "")
