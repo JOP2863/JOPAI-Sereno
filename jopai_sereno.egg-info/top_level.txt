@@ -1,0 +1,8 @@
+_docx_extract
+assets
+config
+docs
+logo
+pages
+scripts
+sereno_core

@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: jopai-sereno
+Version: 0.1.0
+Summary: SÉRÉNO — pilote Streamlit (JOPAI BTP)
+Requires-Python: >=3.10

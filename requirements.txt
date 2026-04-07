@@ -1,4 +1,6 @@
 # Dashboard Streamlit — SÉRÉNO
+# Installe le paquet local `sereno_core` (import fiable sur Streamlit Cloud / CI).
+-e .
 # Contrainte google-api-core : évite le "backtracking" pip entre google-cloud-storage,
 # google-cloud-aiplatform et google-generativeai (résolveur qui tourne très longtemps).
 streamlit>=1.28
