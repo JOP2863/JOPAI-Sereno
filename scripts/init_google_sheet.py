@@ -2,8 +2,8 @@
 """
 Initialise les onglets du classeur SÉRÉNO : en-têtes (ligne 1) et lignes de graine si l’onglet est vide.
 
-Lit la configuration dans `.streamlit/secrets.toml` (à la racine du dépôt) :
-  gsheet_id, service_account_json_path
+Lit la configuration dans `.streamlit/secrets.toml` :
+  gsheet_id, et compte de service via [gcp_service_account] ou service_account_json_path
 
 Usage (depuis la racine du dépôt) :
   python scripts/init_google_sheet.py
@@ -25,13 +25,13 @@ except ModuleNotFoundError:
     import tomli as tomllib  # type: ignore[no-redef]
 
 import gspread
-from google.oauth2.service_account import Credentials
 from gspread.utils import rowcol_to_a1
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from sereno_core.gcp_credentials import credentials_for_sheets, get_service_account_info
 from sereno_core.sheets_schema import SHEET_TABS, SheetTab
 
 
@@ -98,20 +98,16 @@ def main() -> int:
 
     secrets = load_streamlit_secrets()
     gsheet_id = secrets.get("gsheet_id")
-    rel = secrets.get("service_account_json_path", ".streamlit/google-service-account.json")
-    sa_path = ROOT / rel
     if not gsheet_id:
         print("Erreur : gsheet_id manquant dans .streamlit/secrets.toml", file=sys.stderr)
         return 1
-    if not sa_path.is_file():
-        print(f"Erreur : compte de service introuvable : {sa_path}", file=sys.stderr)
+    try:
+        sa_info = get_service_account_info(ROOT, secrets)
+    except ValueError as e:
+        print(f"Erreur : {e}", file=sys.stderr)
         return 1
 
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive",
-    ]
-    creds = Credentials.from_service_account_file(str(sa_path), scopes=scopes)
+    creds = credentials_for_sheets(sa_info)
     gc = gspread.authorize(creds)
     sh = gc.open_by_key(str(gsheet_id))
 

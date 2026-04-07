@@ -1,6 +1,13 @@
 # Dashboard Streamlit — SÉRÉNO
+# Contrainte google-api-core : évite le "backtracking" pip entre google-cloud-storage,
+# google-cloud-aiplatform et google-generativeai (résolveur qui tourne très longtemps).
 streamlit>=1.28
+requests>=2.28
+fpdf2>=2.7.0
+qrcode[pil]>=7.4
 gspread>=6.0
 google-auth>=2.0
+google-api-core>=2.27.0,<3.0.0
 google-cloud-storage>=2.14
 google-cloud-aiplatform>=1.70
+google-generativeai>=0.8.0

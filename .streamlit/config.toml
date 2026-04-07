@@ -3,13 +3,13 @@
 enableStaticServing = true
 
 [client]
-# SÉRÉNO : afficher la navigation multi-pages (Home, Tests connexions, etc.)
+# SÉRÉNO : barre latérale (sections **Projet** / **Prototype** via `st.navigation` dans Home.py)
 showSidebarNavigation = true
 
 [theme]
-# Rappel des couleurs du Design System MARPA
-primaryColor = "#2F3640"
-backgroundColor = "#F5F5F2"
-secondaryBackgroundColor = "#E0E0E0"
-textColor = "#2F3640"
-font = "serif"
+# Thème Streamlit : bleu institutionnel, fond gris clair, texte foncé
+primaryColor = "#003366"
+backgroundColor = "#F4F7F9"
+secondaryBackgroundColor = "#E2E8F0"
+textColor = "#1a202c"
+font = "sans serif"

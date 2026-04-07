@@ -8,7 +8,8 @@ alwaysApply: true
 Lorsque le projet subit une **modification structurante** (fonctionnelle, technique, organisationnelle, infra, sécurité, parcours utilisateur, données, conventions de secrets, nouvelles pages ou scripts outillage), **mettre à jour** le fichier `CAHIER_DES_CHARGES.md` dans la foulée :
 
 - Ajuster les sections concernées (Partie 1 business / pilote, Partie 2 fonctionnel, Partie 3 technique).
+- **Ton par partie :** en **Partie 1 et 2** (business case, fonctionnel), rester **très pédagogique** pour un lecteur **novice** (ex. artisan métier) : **peu d’acronymes**, et **expliciter** chaque sigle à la première occurrence utile. En **Partie 3** (technique), le niveau peut être **plus spécifique** et s’adresse à une **audience tech** (développeurs, intégrateurs).
 - Incrémenter la **version** en tête du document et ajouter une ligne au **tableau des révisions** en annexe (date, résumé court).
 - Ne **jamais** y copier de mots de passe, clés API ni contenu de `private_key` ; seuls les **noms** de variables, chemins, IDs non sensibles ou déjà publics sont admis.
 
-Si la modification introduit une **nouvelle convention** (fichiers, commandes, architecture), la refléter explicitement dans la Partie 3 ou § cahier d’échanges pour que le dépôt reste la source de vérité alignée sur le code.
+Si la modification introduit une **nouvelle convention** (fichiers, commandes, architecture), la refléter explicitement dans la Partie 3 ou le carnet d’échange pour que le dépôt reste la source de vérité alignée sur le code.

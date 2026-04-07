@@ -1,0 +1,28 @@
+---
+description: UX Streamlit SÉRÉNO — formulaires, overlay de traitement, animations
+alwaysApply: true
+---
+
+# Streamlit SÉRÉNO — conventions UX
+
+## Largeur des champs de formulaire
+
+- Adapter la **largeur** des champs à ce que l’utilisateur saisit : **pas** de champ pleine page pour un **nombre court**, un **CVC**, une **date MM/YY** ou un **indicatif**.
+- Utiliser `st.columns` avec des **poids** réalistes : ex. `st.columns([0.5, 0.5])` pour nom/prénom ; `st.columns([0.12, 0.88])` ou `[0.14, 0.86]` pour indicatif **+33** (fixe) + numéro ; `st.columns([0.55, 0.45])` pour numéro de carte + expiration/CVC côte à côte dans un formulaire **étroit** (`fcol, _ = st.columns([0.62, 0.38])` autour du bloc).
+- **Montants** : champ numérique ou texte court dans une colonne **étroite** (pas toute la ligne).
+- Les **textes longs** (commentaire, compte rendu) : `st.text_area` dans une colonne **~70–75 %** du bloc central (ex. `st.columns([0.72, 0.28])`), jamais imposé à 100 % du viewport si le prototype impose déjà **~70 %** de largeur au conteneur principal.
+
+## Soumission avec calcul / attente côté « serveur » (script Streamlit)
+
+- Lorsqu’une **soumission de formulaire** déclenche un **traitement** (écriture, appel API, logique lourde), entourer le travail d’un `st.spinner` minimal pour activer l’**overlay pastel** définie dans `inject_sereno_prototype_css()` (voile + message **« Votre artisan travaille pour vous… »**), via le helper `proto_processing_pause()` dans `sereno_core/proto_ui.py`.
+- Ne pas utiliser `st.balloons()` dans les parcours prototype SÉRÉNO (effet jugé inadapté au ton « urgence / réassurance »).
+
+## Largeur du contenu principal (~70 %)
+
+- **Toutes** les sections de navigation (**Projet**, **Prototype**, et toute section future dans `Home.py`) doivent respecter un **conteneur central d’environ 70 %** de largeur sur la zone principale (réglage global dans `apply_global_styles()` — `sereno_core/streamlit_theme.py`). Cela vaut pour le cahier des charges, les métriques, le prototype client, etc.
+- Les **graphiques** (bar charts, etc.) n’ont **pas** besoin d’occuper toute cette largeur : utiliser des **colonnes** (`st.columns`) pour **condenser** le visuel au centre tout en gardant une hauteur lisible.
+- Les pages **prototype** qui appellent aussi `inject_sereno_prototype_css()` conservent les mêmes règles de formulaire (champs proportionnés au contenu).
+
+## Prototype client — rappel
+
+- Le fichier `inject_sereno_prototype_css()` ajoute en plus les styles des boutons urgence, SST, satisfaction, overlay « artisan travaille pour vous », etc.

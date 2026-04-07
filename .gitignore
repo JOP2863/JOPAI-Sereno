@@ -14,6 +14,9 @@ config/keys/*.json
 **/*-credentials.json
 *credentials*.json
 
+# Extraction locale du .docx (ne pas versionner)
+_identite_visuelle_extract.txt
+
 # Outils / OS
 __pycache__/
 *.py[cod]
