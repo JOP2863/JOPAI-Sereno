@@ -492,6 +492,35 @@ def apply_global_styles() -> None:
             filter: drop-shadow(0 2px 8px rgba(0, 51, 102, 0.18));
         }}
 
+        .jopai-construction-filigrane {{
+            position: fixed;
+            inset: 0;
+            z-index: 9995;
+            pointer-events: none;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }}
+        .jopai-construction-filigrane__stripe {{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 160%;
+            transform: translate(-50%, -50%) rotate(-20deg);
+            transform-origin: center center;
+            text-align: center;
+            font-family: {dt.FONT_UI};
+            font-weight: 700;
+            font-size: clamp(17px, 3.2vw, 30px);
+            letter-spacing: 0.06em;
+            line-height: 1.45;
+            color: rgba(0, 51, 102, 0.11);
+            text-transform: uppercase;
+            user-select: none;
+            white-space: normal;
+        }}
+
         .jopai-footer {{
             position: fixed;
             bottom: 0;
@@ -527,6 +556,9 @@ def apply_global_styles() -> None:
         }}
         </style>
         <div class="sereno-brand-topbar" aria-hidden="true"></div>
+        <div class="jopai-construction-filigrane" aria-hidden="true">
+            <div class="jopai-construction-filigrane__stripe">Site en construction<br />Prototype SÉRÉNO — JOPAI BTP · démonstration non commerciale</div>
+        </div>
         __JOPAI_PAGE_LOGO__
         <div class="jopai-footer">
             <span class="jopai-mark">JOP</span><span><i>AI</i><sup>©</sup>&nbsp;&nbsp;PRODUCTION © 2026 | TOUS DROITS RÉSERVÉS</span>

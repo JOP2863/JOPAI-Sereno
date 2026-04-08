@@ -33,7 +33,10 @@ with q1:
         st.image(
             buf.getvalue(),
             width=200,
-            caption=f"Flashez pour démarrer le parcours client (« En quoi pouvons-nous vous aider ? ») : {CLIENT_ENTRY_URL}",
+            caption=(
+                "Flashez pour ouvrir l’accueil urgence client (« En quoi pouvons-nous vous aider ? »). "
+                f"Lien : {CLIENT_ENTRY_URL}"
+            ),
         )
     except Exception:
         st.caption(
@@ -41,7 +44,7 @@ with q1:
         )
 with q2:
     st.markdown(
-        f"**Lien direct parcours urgence :** [{CLIENT_ENTRY_URL}]({CLIENT_ENTRY_URL}) — ouverture sur l’écran de choix du type d’intervention.\n\n"
+        f"**Lien direct accueil urgence (client) :** [{CLIENT_ENTRY_URL}]({CLIENT_ENTRY_URL}) — redirection fiable vers le choix du type d’intervention.\n\n"
         f"**Base appli (accueil général) :** [{APP_BASE}]({APP_BASE}/)"
     )
 

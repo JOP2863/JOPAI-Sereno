@@ -49,6 +49,7 @@ _ensure_sereno_core_importable()
 
 import streamlit as st
 
+from sereno_core.app_urls import CLIENT_URGENCE_QUERY_KEY
 from sereno_core.streamlit_theme import apply_global_styles, render_sidebar_branding
 
 st.set_page_config(page_title="SÉRÉNO — JOPAI BTP", page_icon="🔧", layout="wide")
@@ -68,7 +69,12 @@ _projet = [
 
 _prototype_client = [
     st.Page("pages/13_Proto_Guide_parcours.py", title="Guide parcours", icon="🗺️"),
-    st.Page("pages/4_Proto_Client_accueil.py", title="Accueil urgence", icon="🚨"),
+    st.Page(
+        "pages/4_Proto_Client_accueil.py",
+        title="Accueil urgence",
+        icon="🚨",
+        url_path="accueil_urgence",
+    ),
     st.Page("pages/5_Proto_Client_informations.py", title="Informations", icon="📝"),
     st.Page("pages/6_Proto_Client_SST.py", title="Sécurité (SST)", icon="🛡️"),
     st.Page("pages/7_Proto_Client_file_visio.py", title="Mise en relation & visio", icon="📞"),
@@ -101,4 +107,8 @@ nav = st.navigation(
     },
     expanded=True,
 )
+# QR / lien direct : racine + ?client_urgence=1 (évite « Page not found » au premier chargement
+# lorsque le dépôt contient encore un dossier `pages/` — sous-chemin seul peu faux positif).
+if CLIENT_URGENCE_QUERY_KEY in st.query_params:
+    st.switch_page("pages/4_Proto_Client_accueil.py")
 nav.run()
