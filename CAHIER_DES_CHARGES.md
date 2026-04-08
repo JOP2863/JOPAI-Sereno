@@ -1,7 +1,7 @@
 # Cahier des charges — SÉRÉNO (JOPAI BTP)
 
 **Document :** spécification produit et technique — prototype / pilote.  
-**Version :** 1.7 (reporting indicateurs CDC ; conformité Pappers / table `papers` ; menus Projet / Admin pilote ; sélection expert **nom — spécialité (id)** ; PDF accueil novices ; dispos via Admin pilote).  
+**Version :** 1.8 (déploiement Cloud : `requirements.txt` allégé — **`google-generativeai`** en **`requirements-gemini.txt`** optionnel ; périmètre fonctionnel inchangé depuis **1.7** : reporting CDC, Pappers, menus pilote, sélection expert **nom — spécialité (id)**).  
 **Classification des sections :** Partie 1 — contexte & business · Partie 2 — fonctionnel · Partie 3 — technique · **Partie 4 — avancements** (idée → pilote → produit).
 
 **Comment lire ce cahier :**
@@ -684,7 +684,7 @@ Le code (`sereno_core.gcp_credentials`) charge la SA ainsi : **1)** table **`[gc
 - **Fichier :** `pages/1_Tests_connexions.py`.
 - **But :** vérifications **manuelles** (boutons) : **Google Sheets**, **GCS** (liste d’objets), **Vertex AI** (credentials passés explicitement depuis `[gcp_service_account]` ; repli **Gemini** si clé définie). Charge **`sereno_core.gcp_credentials`**.
 - **Lancement :** `streamlit run Home.py` depuis la racine du dépôt ; URL locale type `http://localhost:8501`.
-- **Dépendance repli Gemini :** paquet **`google-generativeai`**. Le test appelle **`list_models`** et ne retient que les modèles exposant **`generateContent`** (évite les 404 sur d’anciens noms type `gemini-1.5-flash-8b`). `pip install -r requirements.txt` dans le **même** Python que Streamlit.
+- **Dépendance repli Gemini :** paquet **`google-generativeai`** (optionnel). Sur **Streamlit Cloud**, il n’est **pas** dans `requirements.txt` (évite un *backtracking* pip très long avec Vertex qui peut faire échouer l’installation). **En local**, pour le repli clé **`GEMINI_API_KEY`** : `pip install -r requirements-gemini.txt` dans le **même** Python que Streamlit. Le test appelle **`list_models`** et ne retient que les modèles exposant **`generateContent`**.
 
 ### 3.9.2 Script `scripts/init_google_sheet.py`
 
@@ -766,18 +766,17 @@ Pour le **détail ligne à ligne**, le **mini-glossaire** et les **questions / r
 
 ## 4.4 Environnement Python (`venv`) et `pip`
 
-- **Rôle des paquets** (`requirements.txt`) : faire tourner **Streamlit**, **Google Sheets** (gspread), **GCS**, **Vertex AI** (SDK), et le **repli Gemini** (`google-generativeai`) pour la page Tests connexions. Sans ce fichier, les imports du projet échouent.
+- **Rôle des paquets** (`requirements.txt`) : faire tourner **Streamlit**, **Google Sheets** (gspread), **GCS**, **Vertex AI** (SDK `google-cloud-aiplatform`), puis le paquet local **`.`** (`sereno_core`). Le **repli Gemini** (`google-generativeai`) est dans **`requirements-gemini.txt`** : à installer **en plus** en local si tu veux tester l’API Gemini hors Vertex ; **non requis** pour le déploiement Cloud.
 - **Si tout est déjà « Requirement already satisfied »** : l’environnement est **déjà correct** — **aucune action obligatoire**. Tu peux lancer `streamlit run Home.py` sans relancer `pip install`.
-- **Si `pip install -r requirements.txt` reste bloqué longtemps** (messages *backtracking*, *looking at multiple versions*) : arrêter avec **Ctrl+C**. Le fichier `requirements.txt` fixe une contrainte **`google-api-core`** pour limiter ce comportement. Ensuite :  
+- **Si `pip install -r requirements.txt` reste bloqué longtemps** (messages *backtracking*, *looking at multiple versions*) : arrêter avec **Ctrl+C**. Éviter d’installer **`google-generativeai`** dans le **même** fichier que Vertex si le résolveur *pip* tourne en rond ; préférer d’abord `requirements.txt`, puis éventuellement `requirements-gemini.txt`. Ensuite :  
   `.\.venv\Scripts\python.exe -m pip install -r requirements.txt`  
   (optionnel : `--no-cache-dir` si besoin).
 - **Revenir en arrière / repartir propre** :  
   1. Fermer les terminaux qui utilisent le venv.  
   2. Supprimer le dossier **`.venv`** à la racine du dépôt.  
   3. `python -m venv .venv` puis activer le venv (PowerShell : `.\.venv\Scripts\Activate.ps1`).  
-  4. `python -m pip install --upgrade pip` puis `pip install -r requirements.txt`.  
+  4. `python -m pip install --upgrade pip` puis `pip install -r requirements.txt` (puis `pip install -r requirements-gemini.txt` si besoin du repli Gemini).  
   Aucun paquet n’est « obligatoire » **hors** de ce projet : supprimer `.venv` **ne casse pas** Windows ni les autres projets.
-- **Retirer uniquement le repli Gemini** (si tu n’en veux pas) : possible de commenter **`google-generativeai`** dans `requirements.txt` et de désactiver le bouton de test associé dans le code — **non recommandé** tant que Vertex n’est pas pleinement opérationnel, car le repli sert de filet.
 
 ---
 
@@ -785,6 +784,7 @@ Pour le **détail ligne à ligne**, le **mini-glossaire** et les **questions / r
 
 | Version | Date | Auteur | Résumé |
 |---------|------|--------|--------|
+| 1.8 | 2026-04-08 | JOPAI + assistant | Pip / Cloud : `requirements.txt` sans **`google-generativeai`** (fichier **`requirements-gemini.txt`** optionnel) pour éviter échec ou timeout d’installation sur Streamlit Cloud ; **§ 3.9.1** et **§ 4.4** alignés. |
 | 1.7 | 2026-04-07 | JOPAI + assistant | **§ 1.7.1** interface pilote dispos (Admin · Pilote, sélection **nom — spécialité (id)**, fenêtre sensible, page 15 hors menu Projet) ; **§ 3.3.2** tableau des sections menu ; **§ 3.9.4** reporting `19`, Pappers / table **`papers`**, PDF accueil novices ; indicateur abandon sans « simulé » § 1.7. |
 | 1.6 | 2026-04-07 | JOPAI + assistant | Fonds urgence ; Experts Sheets multi-onglets ; PDF couverture + QR ; § 1.8 MAIF / certifications ; icônes GCS `icones/`. |
 | 1.5 | 2026-04-07 | JOPAI + assistant | Menu **Prototype · Client / Artisan / Propriétaire** ; PDF **DejaVu** (accents) ; recherche CDC + effacer ; onglets **Disponibilite_Mois**, **Creneau_Astreinte**, **Indisponibilite_Exception** + page **Disponibilités artisans** ; QR démo accueil ; retrait bandeau secrets accueil & métriques. |

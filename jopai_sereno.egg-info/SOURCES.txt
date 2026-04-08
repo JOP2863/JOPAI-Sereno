@@ -27,6 +27,7 @@ pages/9_Proto_Client_paiement.py
 scripts/init_google_sheet.py
 sereno_core/__init__.py
 sereno_core/app_urls.py
+sereno_core/artisan_notify.py
 sereno_core/cdc_pdf_export.py
 sereno_core/design_tokens.py
 sereno_core/formatting.py
@@ -42,7 +43,10 @@ sereno_core/proto_ui.py
 sereno_core/reporting_cdc_indicators.py
 sereno_core/sheets_disponibilite_write.py
 sereno_core/sheets_experts.py
+sereno_core/sheets_paiements_write.py
 sereno_core/sheets_schema.py
+sereno_core/sheets_sessions_write.py
 sereno_core/streamlit_markdown_book.py
 sereno_core/streamlit_theme.py
 sereno_core/urgence_ambiance.py
+sereno_core/visio_recording.py

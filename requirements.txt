@@ -1,8 +1,8 @@
 # Dashboard Streamlit — SÉRÉNO
-# Installe le paquet local `sereno_core` (copie en site-packages — souvent plus fiable que -e sur Cloud).
-.
-# Contrainte google-api-core : évite le "backtracking" pip entre google-cloud-storage,
-# google-cloud-aiplatform et google-generativeai (résolveur qui tourne très longtemps).
+# Installer d’abord les dépendances PyPI, puis le paquet local « . » (plus fiable sur Streamlit Cloud).
+# google-generativeai est volontairement exclu : il provoque un backtracking pip très long avec
+# google-cloud-aiplatform et peut faire échouer le déploiement Cloud (timeout). Pour les tests
+# « API Gemini » (page Connexions), en local : pip install -r requirements-gemini.txt
 streamlit>=1.28
 requests>=2.28
 twilio>=9.0
@@ -10,7 +10,6 @@ fpdf2>=2.7.0
 qrcode[pil]>=7.4
 gspread>=6.0
 google-auth>=2.0
-google-api-core>=2.27.0,<3.0.0
 google-cloud-storage>=2.14
-google-cloud-aiplatform>=1.70
-google-generativeai>=0.8.0
+google-cloud-aiplatform>=1.70,<2.0
+.

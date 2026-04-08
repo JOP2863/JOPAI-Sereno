@@ -1,0 +1,4 @@
+# Dépendance optionnelle — tests « API Gemini » (clé GEMINI_API_KEY) sur la page Connexions.
+# Usage local : pip install -r requirements-gemini.txt
+# (à installer après requirements.txt si besoin des deux stacks Vertex + Gemini API.)
+google-generativeai>=0.8.0,<0.9.0

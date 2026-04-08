@@ -7,7 +7,7 @@ name = "jopai-sereno"
 version = "0.1.0"
 description = "SÉRÉNO — pilote Streamlit (JOPAI BTP)"
 requires-python = ">=3.10"
-# Les dépendances runtime restent listées dans requirements.txt (Streamlit Cloud).
+# Dépendances runtime : requirements.txt (+ requirements-gemini.txt optionnel pour l’API Gemini).
 
 [tool.setuptools.packages.find]
 where = ["."]

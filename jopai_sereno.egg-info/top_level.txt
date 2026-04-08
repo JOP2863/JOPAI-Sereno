@@ -1,5 +1,6 @@
 _docx_extract
 assets
+build
 config
 docs
 logo

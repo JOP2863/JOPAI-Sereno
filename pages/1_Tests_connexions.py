@@ -185,8 +185,8 @@ def _execute_gemini_api_test(api_key: str, model_hint: str) -> None:
         import google.generativeai as genai
     except ImportError:
         st.error(
-            "Paquet **google-generativeai** absent. Exécuter : "
-            "`pip install google-generativeai` (ou `pip install -r requirements.txt`)."
+            "Paquet **google-generativeai** absent (non installé sur Cloud pour éviter les conflits pip). "
+            "En local : `pip install -r requirements-gemini.txt`."
         )
         return
 
