@@ -91,13 +91,10 @@ if not satisfaction_rows:
     st.caption("Pas encore d’avis sur vos sessions dans cette session démo.")
 else:
     sdf = pd.DataFrame(satisfaction_rows)
-    _cols = [c for c in ("ts", "session_id", "stars", "nps", "commentaire") if c in sdf.columns]
+    _cols = [c for c in ("ts", "session_id", "nps", "commentaire") if c in sdf.columns]
     st.dataframe(sdf[_cols], use_container_width=True, hide_index=True)
-    c1, c2 = st.columns(2)
-    with c1:
-        st.metric("Note moyenne (étoiles)", f"{sdf['stars'].mean():.1f} / 5")
-    with c2:
-        st.metric("NPS moyen", f"{sdf['nps'].mean():.1f} / 10")
+    if "nps" in sdf.columns:
+        st.metric("NPS moyen (sessions listées)", f"{pd.to_numeric(sdf['nps'], errors='coerce').mean():.1f} / 10")
 
 st.divider()
 st.subheader("Synthèse")

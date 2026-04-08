@@ -10,6 +10,24 @@ from pathlib import Path
 import streamlit as st
 
 from sereno_core import design_tokens as dt
+from sereno_core.jopai_brand_html import filigrane_second_line_html, footer_brand_block_html, sidebar_brand_line_html
+
+
+def _busy_overlay_card_inner_html(*, use_assigned_expert: bool = True) -> str:
+    """Ligne centrale de la carte overlay : nom de l’expert si demandé et déjà assigné (sinon message générique)."""
+    from html import escape
+
+    if use_assigned_expert:
+        try:
+            from sereno_core.proto_state import p_get
+
+            ex = p_get("assigned_expert") or {}
+            nom = str(ex.get("nom") or "").strip()
+            if nom:
+                return f"<strong>{escape(nom)}</strong> travaille pour vous…"
+        except Exception:
+            pass
+    return escape("Votre artisan travaille pour vous…")
 
 _LOGO_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 
@@ -125,16 +143,16 @@ def _build_sidebar_logo_html() -> str:
 
 
 def render_sidebar_branding() -> None:
-    """À appeler dans `st.sidebar` (ex. `Home.py`) : logo SÉRÉNO en tête du menu."""
+    """À appeler dans `st.sidebar` (ex. `Home.py`) : logo + ligne marque JOPAI© SÉRÉNO."""
     html = _build_sidebar_logo_html()
     if html:
         st.markdown(html, unsafe_allow_html=True)
-    else:
-        st.markdown("##### SÉRÉNO", unsafe_allow_html=True)
+    st.markdown(sidebar_brand_line_html(), unsafe_allow_html=True)
 
 
-def inject_sereno_prototype_css() -> None:
+def inject_sereno_prototype_css(*, busy_overlay_use_assigned_expert: bool = True) -> None:
     """Styles prototype SÉRÉNO — pages parcours client et composants `.sereno-*`."""
+    busy_inner = _busy_overlay_card_inner_html(use_assigned_expert=busy_overlay_use_assigned_expert)
     st.markdown(
         f"""
         <style>
@@ -155,6 +173,29 @@ def inject_sereno_prototype_css() -> None:
         }}
         section.main .stMarkdown, section.main p, section.main span {{
             font-family: {dt.FONT_UI};
+        }}
+
+        /* Marque JOPAI© (turquoise) + SÉRÉNO (pétrole en inline hors ces classes) — alias JOPAI-BTP : .brand-jop / .brand-ai */
+        section.main .brand-job,
+        section.main .brand-jop,
+        [data-testid="stAppViewContainer"] .brand-job,
+        [data-testid="stAppViewContainer"] .brand-jop {{
+            font-weight: 800 !important;
+            color: {dt.COLOR_JOPAI_TURQUOISE} !important;
+        }}
+        section.main .brand-sereno,
+        section.main .brand-ai,
+        [data-testid="stAppViewContainer"] .brand-sereno,
+        [data-testid="stAppViewContainer"] .brand-ai {{
+            font-style: italic !important;
+            color: {dt.COLOR_JOPAI_TURQUOISE} !important;
+        }}
+        section.main .brand-job + .brand-sereno + sup,
+        section.main .brand-jop + .brand-ai + sup,
+        [data-testid="stAppViewContainer"] .brand-job + .brand-sereno + sup,
+        [data-testid="stAppViewContainer"] .brand-jop + .brand-ai + sup {{
+            color: {dt.COLOR_JOPAI_TURQUOISE} !important;
+            font-size: 0.65em !important;
         }}
 
         .sereno-reassure {{
@@ -409,7 +450,7 @@ def inject_sereno_prototype_css() -> None:
         }}
         </style>
         <div class="sereno-busy-overlay" aria-live="polite" aria-busy="true">
-            <div class="sereno-busy-card">Votre artisan travaille pour vous…</div>
+            <div class="sereno-busy-card">{busy_inner}</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -492,6 +533,22 @@ def apply_global_styles() -> None:
             filter: drop-shadow(0 2px 8px rgba(0, 51, 102, 0.18));
         }}
 
+        .sereno-pilot-auth-sidebar-title {{
+            font-family: {dt.FONT_UI};
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin: 0.15rem 0 0.35rem 0;
+            color: #1e3a5f;
+        }}
+
+        /* Popovers (ex. connexion pilote) au-dessus du filigrane / footer */
+        div[data-testid="stPopover"],
+        div[data-testid="stPopover"] > button,
+        [data-baseweb="popover"],
+        div[data-testid="stPopoverContent"] {{
+            z-index: 100000 !important;
+        }}
+
         .jopai-construction-filigrane {{
             position: fixed;
             inset: 0;
@@ -557,11 +614,11 @@ def apply_global_styles() -> None:
         </style>
         <div class="sereno-brand-topbar" aria-hidden="true"></div>
         <div class="jopai-construction-filigrane" aria-hidden="true">
-            <div class="jopai-construction-filigrane__stripe">Site en construction<br />Prototype SÉRÉNO — JOPAI BTP · démonstration non commerciale</div>
+            <div class="jopai-construction-filigrane__stripe">Site en construction<br />{filigrane_second_line_html()}</div>
         </div>
         __JOPAI_PAGE_LOGO__
         <div class="jopai-footer">
-            <span class="jopai-mark">JOP</span><span><i>AI</i><sup>©</sup>&nbsp;&nbsp;PRODUCTION © 2026 | TOUS DROITS RÉSERVÉS</span>
+            {footer_brand_block_html()}
         </div>
         """.replace(
             "__JOPAI_PAGE_LOGO__", page_logo_html

@@ -1,7 +1,7 @@
 # Cahier des charges — SÉRÉNO (JOPAI BTP)
 
 **Document :** spécification produit et technique — prototype / pilote.  
-**Version :** 1.8 (déploiement Cloud : `requirements.txt` allégé — **`google-generativeai`** en **`requirements-gemini.txt`** optionnel ; périmètre fonctionnel inchangé depuis **1.7** : reporting CDC, Pappers, menus pilote, sélection expert **nom — spécialité (id)**).  
+**Version :** 1.23 (SMS Twilio **court** + doc **30044** Trial / géo ; page **Reporting** : `line_chart` / `area_chart` / `scatter_chart` / `progress` ; filigrane **pastel** ; accueil client : **nouvelle session** + overlay sans nom d’expert).  
 **Classification des sections :** Partie 1 — contexte & business · Partie 2 — fonctionnel · Partie 3 — technique · **Partie 4 — avancements** (idée → pilote → produit).
 
 **Comment lire ce cahier :**
@@ -32,7 +32,13 @@
 
 ## 1.3 « Plus » JOPAI
 
-**JOPAI** est une **marque** spécialisée dans l’**intelligence artificielle** et les **services numériques** ; elle s’adresse en particulier aux **métiers de l’artisanat** et du **BTP** (accompagnement, outils, prototypes produits comme SÉRÉNO).
+**JOPAI** est une **marque** spécialisée dans l’**intelligence artificielle** et les **services numériques** ; elle s’adresse en particulier aux **métiers de l’artisanat** et du **BTP** (accompagnement, outils, prototypes produits comme **JOP***AI*© **SÉRÉNO**).
+
+### 1.3.1 Nom du produit affiché (**JOPAI© SÉRÉNO**)
+
+Pour l’**affichage** (interfaces, supports grand public), on aligne la **marque maison** sur **JOPAI-BTP** : **JOP** en gras, *AI* en italique, © en exposant — le tout en **turquoise** **#0d9488** ; le nom du service **SÉRÉNO** suit en **majuscules accentuées**, en **bleu pétrole** **#0b2745** (équivalent visuel du « BTP » après JOPAI© sur le site JOPAI-BTP). Les **titres de page** Streamlit reprennent en **suffixe** la formule **by JOPAI© SÉRÉNO** (helpers dans **`sereno_core/jopai_brand_html.py`**). En **code** (fichiers, variables, préfixes `sereno_`), les formes techniques historiques peuvent rester si elles ne sont pas visibles par l’utilisateur final.
+
+**Parcours « app » :** dans ce dépôt, le client utilise **les mêmes** pages Streamlit sur téléphone ou ordinateur ; il n’existe **pas** de jeu de pages « application » distinct ni de routage selon l’appareil — l’app **Expo** cible est **hors** ce dépôt (voir § 1.5 et règle **dual UX**).
 
 - **Paiement sécurisé** via la plateforme (cible : **Stripe Connect** — système qui **répartit** l’argent entre la plateforme et l’expert après une vraie transaction ; **hors pilote** simulé).
 - **Confiance** : experts « embarqués », charte de simplicité (réponses courtes, pas de jargon inutile).
@@ -77,7 +83,7 @@ Les indicateurs ci-dessous servent de **grille de lecture** pour la phase pilote
 | **Délai médian de première réponse** | Temps entre « demande lancée » et « expert joint / salle ouverte » | Qualité perçue |
 | **Taux d’abandon** | Arrêt avant fin checklist / avant visio / avant l’étape paiement (pilote) | Frictions UX |
 | **Durée médiane de session visio** | Temps passé en visio | Charge experts |
-| **Satisfaction** (étoiles + NPS) | Après session | Qualité du service |
+| **Satisfaction** (**NPS** 0 à 10, avec commentaire libre optionnel) | Après session | Qualité du service |
 | **Taux de résolution perçue** | « Problème mieux maîtrisé » oui/non | Efficacité à distance |
 | **Taux de recontact sous 24 h** | Nouvelle demande liée au même dossier | Suivi / qualité |
 | **Taux de passage au déplacement** | Visio insuffisante → intervention terrain | Complémentarité |
@@ -105,6 +111,8 @@ Les indicateurs ci-dessous servent de **grille de lecture** pour la phase pilote
 - **Règle d’affichage des experts dans les listes :** une **entrée par couple (expert, type d’intervention autorisé)** — format **`Nom — Libellé urgence (expert_id)`** (ex. *ROBERT Sébastien — Gaz (EXP-002)* et *ROBERT Sébastien — Eau (EXP-002)* si l’expert a plusieurs `types_autorises` dans Sheets). Même logique sur la page **Conformité réseau (SIREN / Pappers)** pour rattacher une requête à un **contexte métier** clair.
 - **Fenêtre sensible (< 30 jours avant le 1ᵉʳ du mois concerné, ou mois passé) :** l’artisan ne doit **pas** modifier seul sans **notifier le propriétaire** (case à cocher en pilote) ; le propriétaire doit confirmer un **accord artisan** pour agir sur ces mois — aligné gouvernance § 1.7.1.
 - **Page `pages/15_Disponibilite_artisans.py` :** conservée comme **vue / maintenance** sur la structure Sheets ; **elle n’apparaît plus** dans le menu **Projet** (menu allégé — la saisie opérationnelle passe par **Administration · Pilote**).
+- **Assistant semaine + graphique mensuel (pilote) :** module `sereno_core/disponibilite_calendar_ui.py` — sur **Dispo. artisan** et **Dispo. réseau (proprio)**, un replis permet de cocher des **créneaux indisponibles** (matin / après-midi / soir) sur la semaine en cours et d’**injecter** un texte récapitulatif dans le **commentaire interne** ; la **vue réseau** affiche aussi un **graphique** (volume par mois et par mode) avant le tableau brut, pour une lecture **temporelle** plus simple qu’une grille seule.
+- **Assistant mois (V2, type calendrier) :** second replis avec **navigation mois par mois** (◀ ▶) et une **grille** : jour **décoché** = **indisponible** toute la journée ; génération d’un **texte récap** pour le même commentaire interne (granularité toujours **texte** côté Sheets dans le pilote).
 
 **Indicateurs dérivés :** couverture 24/7, taux de « mois complets » renseignés par expert, respect du verrouillage J−30.
 
@@ -119,6 +127,27 @@ Le document Word **« certifications et MAIF »** (version équipe JOPAI, hors d
 - les **exigences de contenu** (dont **prompts** validés pour icônes urgence, schémas pédagogiques et supports grand public) alignés sur le discours **MAIF** et les partenaires concernés.
 
 **Règle projet :** toute évolution touchant l’assurance, les labels ou les engagements vis-à-vis des usagers doit **croiser** trois sources : ce cahier, le document Word susnommé et le carnet d’échange (`docs/CAHIER_ECHANGES.md`). Les polices **DejaVu** utilisées pour l’export PDF du CDC sont des fichiers **TTF** techniques (lisibilité UTF-8) : elles ne remplacent pas les exigences rédactionnelles ou graphiques du référentiel MAIF.
+
+### 1.8.1 Réseau sinistres et mutuelles (ex. **MAIF**) — information grand public
+
+*Cette sous-section résume une **démarche type** pour un artisan qui souhaite **travailler sur des dossiers de sinistres** (incendie, dégât des eaux, bris de glace, etc.) pour le compte d’une **mutuelle** ou d’un **assureur**. Elle ne remplace **ni** une convention **ni** les règles du mandataire ; elle sert de **repère pédagogique** dans le cahier des charges.*
+
+**Pourquoi c’est intéressant pour un artisan :** être **partenaire** d’une mutuelle peut **stabiliser le carnet** en recevant des missions sur des sinistres déjà ouverts par l’assureur.
+
+**Comment ça marche en pratique (souvent) :** la **MAIF**, comme beaucoup d’assureurs, ne gère **pas** toujours son réseau d’artisans **en direct**. Elle **délègue** la gestion à des **plateformes spécialisées** dans le suivi des sinistres, par exemple **IMAX** (groupe **Saretec**, parfois associé au réseau **IRD**) ou le réseau **Sygma**. D’autres volumes (petits dépannages) peuvent parfois transiter par des **tiers** du type **Multiassistance** ou **HomeServe**, selon les accords du moment.
+
+**Étapes indicatives pour une candidature :**
+
+1. **Identifier la bonne porte d’entrée** : se renseigner sur le **mandataire** qui recrute les prestataires pour le type d’intervention visé (site du mandataire, rubrique du type **« Devenir partenaire »** ou **prestataire**).
+2. **Préparer un dossier « sans faille »** (exigences fréquentes) :
+   - **Qualifications** : labels du bâtiment souvent demandés (**RGE** = *Reconnu garant de l’environnement*, **Qualibat**, diplômes du métier) ;
+   - **Assurances** : **décennale** et **responsabilité civile professionnelle** (**RC Pro**) à jour ;
+   - **Santé de l’entreprise** : **K-bis** récent (souvent **moins de trois mois**), structure pérenne ;
+   - **Numérique** : capacité à **échanger des dossiers en ligne** (photos avant / après, devis dématérialisés, facturation électronique).
+3. **Processus habituel** : **candidature en ligne** → si la zone géographique ou le métier **manque de prestataires**, **audit** (tarifs, capacité d’intervention) → **signature d’une convention** avec souvent une **grille tarifaire négociée** (parfois inférieure aux tarifs « particuliers », compensée par le **volume**) et des **délais d’intervention** stricts (ex. premier contact sous **24 h / 48 h**).
+4. **Critères de réussite côté assureur / mandataire** : **réactivité** (réponse rapide au client ou au gestionnaire) ; **qualité du compte rendu** (photos, clarté) ; **précision du rayon d’intervention** (les assureurs comblent souvent des « trous » en zone rurale ou très dense).
+
+**Lien avec SÉRÉNO :** le produit vise la **télé-expertise** et la **mise en relation** ; l’intégration à un **réseau sinistre** mandaté reste un **sujet métier et contractuel** distinct, à traiter avec les **plateformes** et la **conformité** (voir aussi la conformité entreprise **§ 3.8** et le document Word « certifications et MAIF »).
 
 ---
 
@@ -292,6 +321,25 @@ Les **textes SST**, **CGU**, **mentions légales** et **politique de rembourseme
 
 **Hors pilote :** passage à **Stripe test** puis **live** + mentions légales et CGU adaptées.
 
+## 2.10 Profils d’accès et promesse « compagnon » (cible produit — préparation pilote)
+
+SÉRÉNO prévoit plusieurs **niveaux d’accès** pour séparer ce que voit ou modifie chaque acteur. En phase **pilote Streamlit**, l’authentification forte n’est pas encore branchée partout : les rôles ci-dessous servent de **référence produit** et sont **préfigurés** dans l’onglet Sheets **`Utilisateurs_Acces`** (voir § 3.6.1 et § 3.6.6).
+
+| Profil | Qui | Ce qu’il peut faire (vision cible) |
+|--------|-----|-------------------------------------|
+| **Grand public (client)** | Particulier en urgence | **Accès sans compte** au parcours urgence (choix du type, informations, SST, mise en relation, visio, avis). Option **créer un compte** pour retrouver un historique léger, préférences ou suivi — **à activer** lors du branchement **auth** (Supabase / autre). |
+| **Client inscrit** | Même usager, avec compte | Mêmes parcours + services liés au compte (historique, préférences), selon politique produit. |
+| **Artisan** | Expert du réseau | **Tableau de bord** : activité, sessions, avis ; **prise d’appel** / réception des sollicitations ; **mise à jour des disponibilités** (créneaux, modes). Pas d’accès aux fonctions « réseau entier » réservées propriétaire / compagnon. |
+| **Propriétaire du réseau** | Direction / opérateur plateforme | **Vision transversale** : pilotage, reporting, disponibilités réseau, conformité (ex. SIREN / Pappers), paramètres sensibles. |
+| **Compagnon** | Référent dédié à la **qualité du réseau** | Rôle de **garant** : **sélectionner**, **documenter** et **suivre** les artisans **référencés** (entrée dans le vivier, critères métiers, retraits ou suspensions). Ne remplace pas le juridique ni l’assurance ; il **cadre** le référentiel humain de confiance. |
+
+**Argumentaire commercial / crédibilité :** SÉRÉNO met en avant un **dispositif compagnon** : la plateforme ne se contente pas d’afficher des profils, elle s’appuie sur des **référents qui accompagnent la sélection** des professionnels. C’est une réponse explicite au risque « annuaire fourre-tout » : **rigueur** et **responsabilité** dans le choix des intervenants.
+
+**Valeurs de rôle** (convention technique pilote, colonne **`role`** de **`Utilisateurs_Acces`**) :  
+`CLIENT_PUBLIC`, `CLIENT_COMPTE`, `ARTISAN`, `PROPRIETAIRE`, `COMPAGNON` (libellés exacts évolutifs — seuls les **principes** sont contractuels ici).
+
+**Même e-mail, plusieurs casquettes :** la personne qui gère le réseau peut aussi être **compagnon** sur un périmètre (ex. serrurerie). En pilote, la colonne **`code_pilote`** (mot de passe simple, voir § 3.3.2) permet de choisir **quelle ligne** du tableau s’applique après saisie de l’e-mail.
+
 ---
 
 # Partie 3 — Sujets techniques
@@ -327,12 +375,19 @@ Les **textes SST**, **CGU**, **mentions légales** et **politique de rembourseme
 
 - **Déclenchement :** au clic **« Ouvrir la salle de visio »**, l’app tente de prévenir l’artisan assigné (données depuis l’onglet **`Experts`**, colonne `telephone`). Cela permet qu’« ça sonne » côté artisan.
 - **Canaux supportés (priorité configurable)** : **SMS**, puis **appel vocal**, puis **push** (application mobile). L’ordre est configurable via `notification_priority` dans les secrets.
-- **Implémentation pilote (Streamlit)** : Twilio pour **SMS** + **appel** (réveil vocal). Le push est un stub (cible Expo).
+- **Implémentation pilote (Streamlit)** : Twilio pour **SMS** + **appel** (réveil vocal). Le texte reprend le **motif d’urgence**, le **prénom ou pseudo** saisi par le client (étape informations), une **phrase rassurante** et le **lien de la salle** ([Jitsi Meet](https://meet.jit.si/) généré dans le parcours ou URL Daily / Twilio si renseignée dans les secrets). Le push est un stub (cible Expo).
 
 **Enregistrement visio (optionnel) :**
 
 - Si une salle **Daily** est utilisée et qu’une clé **`DAILY_API_KEY`** est fournie, le pilote peut déclencher le **start/stop recording** via l’API Daily.
+- **Twilio Video** : l’**enregistrement** des compositions (en général via **Enregistrements** / **Compositions** côté API Twilio) fournit des **fichiers média** ; ce n’est **pas** une **transcription texte** prête à l’emploi. Pour obtenir du **texte** (pour recherche, compte rendu, IA), il faut enchaîner avec un **moteur de reconnaissance vocale** (voir ci-dessous).
 - La cible produit consiste à **stocker** l’enregistrement (ou ses sorties) dans le bucket GCS `jopai-sereno` et à référencer le chemin objet depuis `Sessions`.
+
+**Transcription et post-traitement IA (hors « bouton magique » Twilio) :**
+
+- **Twilio** (SMS / appel / Video) **ne fournit pas** une transcription **gratuite et intégrée** de toute visio comme une fonction unique ; les **coûts** dépendent des **produits** activés (**minutes Video**, **stockage** d’enregistrements, **Media Streams** pour envoyer l’audio en flux vers un autre service, etc.) — consulter la **grille tarifaire officielle** Twilio et le compte Twilio pour une estimation à jour.
+- **Piste architecture** : (1) enregistrer la session (**Daily** ou **Twilio**) → (2) récupérer le fichier ou un flux audio → (3) **Speech-to-Text** (**Google Cloud Speech-to-Text**, ou **Vertex AI** / modèles **Gemini** sur fichier audio selon l’offre retenue) → (4) **post-traitement** (résumé, extraction de points clés) via **Vertex** ou API **Gemini**, avec **consentement** utilisateur et **durée de conservation** définis (cf. § conformité).
+- **Media Streams (Twilio)** : permet d’**exposer l’audio** en temps réel vers un **WebSocket** applicatif ; la **transcription** et la **facturation** associées relèvent alors du **service** qui consomme ce flux (et des **minutes** / options Twilio activées), pas d’une « transcription Twilio » monolithique.
 
 **Règle de nommage des fichiers visio (GCS) :**
 
@@ -363,6 +418,8 @@ Exemple :
 ## 3.3 Architecture logique (pilote) — couches
 
 **Accord d’architecture :** la **logique métier** (accès Sheets, règles SST, sessions, intégrations GCP, etc.) vit dans des **modules Python** (`sereno_core/`, scripts, futurs services). Les **interfaces** ne font qu’**orchestrer** et afficher : elles appellent cette logique, sans la dupliquer.
+
+**Règle Cursor (double UX Web / mobile) :** le fichier `.cursor/rules/sereno-dual-ux-web-mobile.mdc` rappelle qu’une évolution doit **mettre à jour la logique dans `sereno_core` en premier**, puis les écrans **Streamlit** et, plus tard, l’**app Expo**, de façon **concomitante** (même règles métier, pas de copier-coller divergent).
 
 | Couche UX | Public | Technologie | Rôle |
 |-----------|--------|-------------|------|
@@ -400,8 +457,9 @@ Exemple :
 
 | Élément | Rôle |
 |---------|------|
-| `sereno_core/` | Paquet Python : `sheets_schema`, **`gcp_credentials`**, **`sheets_experts`** (dont **`disponibilite_expert_options`**), **`md_chapters`**, **`streamlit_markdown_book`**, **`cdc_pdf_export`**, **`projet_navigation_intro`**, **`reporting_cdc_indicators`**, **`pappers_client`**, etc. |
+| `sereno_core/` | Paquet Python : `sheets_schema`, **`gcp_credentials`**, **`gspread_helpers`** (quota **429** / liste d’onglets), **`sheets_experts`**, **`pilot_auth`** (session + lecture **Utilisateurs_Acces**), **`md_chapters`**, **`streamlit_markdown_book`**, **`cdc_pdf_export`**, **`projet_navigation_intro`**, **`reporting_cdc_indicators`**, **`pappers_client`**, etc. |
 | `scripts/init_google_sheet.py` | Crée les onglets manquants, écrit la **ligne 1** (en-têtes) et optionnellement les **lignes de graine** (voir § 3.9). |
+| `scripts/migrate_google_sheet_schema.py` | **Migration additive** du classeur : ajoute colonnes manquantes + onglet **`Utilisateurs_Acces`** selon `sheets_schema` (sans supprimer de colonnes). |
 | `scripts/sql/create_papers_cache_table.sql` | Script PostgreSQL — table **`papers`** (cache JSON API Pappers). |
 | `Home.py` | Entrée Streamlit. |
 | `pages/` | Tests, CDC, carnet, métriques (`14`), reporting (`19`), proto client / artisan / propriétaire (`4`–`13`, `18`), admin dispos (`16`–`17`), etc. |
@@ -420,6 +478,8 @@ L’accès aux pages du dossier `pages/` exige **`showSidebarNavigation = true`*
 | **Prototype · Artisan** | Tableau de bord expert. |
 | **Prototype · Propriétaire** | Activité réseau, **Conformité (SIREN / Pappers)**. |
 | **Administration · Pilote** | **Dispo. artisan**, **Dispo. réseau (proprio)** — saisie `Disponibilite_Mois` (§ 1.7.1). |
+
+**Connexion pilote (`pilot_auth`, `Home.py`) :** par défaut, seule la section **Prototype · Client** est visible (**accès public**). Le bouton **Se connecter** figure dans la **barre latérale** (sous le logo) : **e-mail** + champ **code pilote** (mot de passe simple **`code_pilote`** dans **`Utilisateurs_Acces`**). Si **une seule** ligne existe pour l’e-mail et que **`code_pilote`** est vide dans la feuille, le code n’est pas exigé ; si **`code_pilote`** est renseigné, il faut le saisir. Si **plusieurs** lignes partagent le même e-mail, le **code pilote** est **obligatoire** et doit correspondre **exactement** à la colonne **`code_pilote`** de la ligne voulue (ex. **propriétaire** vs **compagnon serrurerie**). Ce n’est **pas** une authentification forte : mot de passe **en clair** dans Sheets pour le pilote uniquement. **ARTISAN** : menu restreint (dashboard + dispo artisan). **Rôles « équipe »** (propriétaire, compagnon, client inscrit côté compte…) : menu complet Streamlit aligné **§ 2.10**.
 
 ## 3.4 Stratégie de migration Supabase (après pilote)
 
@@ -449,8 +509,19 @@ L’accès aux pages du dossier `pages/` exige **`showSidebarNavigation = true`*
 | `Creneau_Astreinte` | Détail optionnel : jour / date, plage horaire, fuseau, priorité d’appel. |
 | `Indisponibilite_Exception` | Congés, formation (début / fin / motif). |
 | `Paiements` | (Optionnel) trace des intents Stripe test. |
+| `Utilisateurs_Acces` | Profils **pilote** liés à § 2.10 : e-mail, **role**, **`code_pilote`** (choix du profil si un même e-mail sur plusieurs lignes), téléphone, rattachement artisan optionnel (`expert_id_lie`), audit (`enregistre_le`, `maj_le`). |
+| `Connexions_Test` | Journaux des tests d’intégration (voir page **Tests connexions**). |
 
-### 3.6.2 Prêt à copier-coller — ligne d’en-tête par onglet
+### 3.6.2 Horodatage et dates d’effet (toutes les tables pilote)
+
+Pour **tracer** les enregistrements et **versionner** les référentiels sans tout ressaisir :
+
+- **Données de référence** (`Config`, `Types_Urgence`, `Checklist_SST`, `Regles_Moteur`) : colonnes **`cree_le`**, **`effet_debut`**, **`effet_fin`** (ISO **yyyy-mm-dd** ou **yyyy-mm-ddThh:mm:ssZ** ; **`effet_fin`** vide = ligne toujours valable si `actif` ou équivalent le permet).
+- **Données opérationnelles** (`Sessions`, `Experts`, `Disponibilite_Mois`, `Creneau_Astreinte`, `Indisponibilite_Exception`, `Paiements`, `Connexions_Test`) : **`enregistre_le`** (première écriture de la ligne), **`maj_le`** (dernière mise à jour). L’onglet **Sessions** conserve **`created_at`** (métier parcours) en complément ; le code pilote remplit **`maj_le`** à chaque upsert lorsque la colonne existe.
+
+**Mise à jour d’un classeur déjà rempli :** exécuter le script décrit en **§ 3.6.7**. Les nouvelles cellules sont **vides** : alimenter **`effet_*`** ou **`enregistre_le`** selon votre gouvernance (manuellement ou via scripts métier). Les blocs « copier-coller » du **§ 3.6.3** peuvent être **complétés** avec ces colonnes — **source de vérité** du détail des en-têtes : fichier **`sereno_core/sheets_schema.py`**.
+
+### 3.6.3 Prêt à copier-coller — ligne d’en-tête par onglet
 
 Créer **un onglet par bloc** ci-dessous. Coller **la ligne 1** telle quelle dans la **ligne 1** du nouvel onglet (séparer les colonnes : Google Sheets reconnaît les tabulations si vous collez depuis un éditeur de texte, ou utilisez **Données > Fractionner le texte en colonnes** avec séparateur **tabulation**).
 
@@ -600,7 +671,7 @@ paiement_id	session_id	montant_centimes	mode_paiement	statut	stripe_id	created_a
 
 ---
 
-### 3.6.3 Référentiel Google (classeur, compte de service, Vertex, GCS)
+### 3.6.4 Référentiel Google (classeur, compte de service, Vertex, GCS)
 
 | Élément | Valeur / convention |
 |--------|----------------------|
@@ -613,7 +684,7 @@ paiement_id	session_id	montant_centimes	mode_paiement	statut	stripe_id	created_a
 | **API Gemini (clé)** | Option : **`GEMINI_API_KEY`** dans `.streamlit/secrets.toml` (repli hors Vertex). |
 | **Bucket GCS** | `jopai-sereno` — droits **objets** sur le bucket pour la SA. |
 
-### 3.6.4 Bilan infrastructure cloud (référence pilote SÉRÉNO)
+### 3.6.5 Bilan infrastructure cloud (référence pilote SÉRÉNO)
 
 Synthèse des **piliers** opérationnels côté Google Cloud / Google Workspace. **Aucun mot de passe ni clé secrète** ne figure dans ce document — uniquement des **noms** et **identifiants non secrets** (projet, bucket, email de compte de service, ID de classeur).
 
@@ -626,13 +697,26 @@ Synthèse des **piliers** opérationnels côté Google Cloud / Google Workspace.
 
 **Complément — OpenAI / Gemini :** clés dans `.streamlit/secrets.toml` ou variables d’environnement ; **jamais** dans un fichier commité. Si la **clé privée** SA est dans le TOML local, traiter ce fichier comme **secret** (même niveau de protection qu’un JSON de clé).
 
-### 3.6.5 Dépannage IAM (erreurs 403 des tests connexions)
+### 3.6.6 Dépannage IAM (erreurs 403 des tests connexions)
 
 | Symptôme | Cause fréquente | Action |
 |----------|-----------------|--------|
 | **GCS** `storage.buckets.get` refusé | Rôle **objets** seul (ex. admin **objets** du bucket) **sans** lecture des **métadonnées du bucket** | Le test Streamlit utilise désormais **`list_blobs`** (API **Objects**, permission `storage.objects.list`), pas `bucket.exists()`. Si 403 persiste : vérifier que la SA est bien **membre du bucket** `jopai-sereno` avec au minimum **Storage Object Viewer** ou **Storage Object Admin** (niveau **bucket** ou projet). |
 | **Vertex** `aiplatform.endpoints.predict` refusé | SA sans droit d’**inférence** Vertex sur le projet / la région | Console **IAM** du projet `sereno-492614` : ajouter à la SA le rôle **Vertex AI User** (`roles/aiplatform.user`). Activer l’**API Vertex AI**. Vérifier que **`vertex_location`** (`europe-west1`, etc.) est une région où le modèle est disponible ; sinon essayer `europe-west4` ou `us-central1` dans `.streamlit/secrets.toml`. |
+| **Vertex** « Publisher Model … was not found » (**404**) | **Nom de modèle** non reconnu dans la **région** (souvent un identifiant **sans numéro de version**) | Utiliser un **`vertex_model`** **versionné** listé pour ta région (ex. `gemini-1.5-flash-002`, `gemini-2.0-flash-001`) — voir la documentation Google sur les **versions de modèles** Vertex ; ajuster **`vertex_location`** si le modèle n’y est pas publié. |
 | **Vertex indisponible** + clé Gemini renseignée | Repli développeur | La page **Tests connexions** peut enchaîner un appel **API Gemini** via `GEMINI_API_KEY` (hors Vertex) pour valider l’IA sans attendre l’IAM Vertex. |
+
+### 3.6.7 Script de migration du classeur (`migrate_google_sheet_schema.py`)
+
+But : **aligner** un Google Sheet **existant** sur `sereno_core/sheets_schema.py` **sans supprimer** de colonnes ni de lignes.
+
+- **Comportement :** pour chaque onglet défini dans le schéma, le script lit la ligne d’en-tête ; il **ajoute en fin** les intitulés de colonnes **manquants** (dans l’ordre du schéma), puis **complète** chaque ligne de données avec des cellules vides pour ces nouvelles colonnes. Si l’onglet **n’existait pas**, il est **créé** (comme avec `init_google_sheet.py`). Il ne modifie **pas** l’ordre des colonnes déjà présentes.
+- **Exécution (depuis la racine du dépôt, avec `.streamlit/secrets.toml` valide) :**
+  - `python scripts/migrate_google_sheet_schema.py --dry-run` — affiche les ajouts prévus **sans écrire** ;
+  - `python scripts/migrate_google_sheet_schema.py --apply` — **écrit** dans le classeur `gsheet_id`.
+- **Quand l’utiliser :** après mise à jour du schéma (ex. horodatage, **`Utilisateurs_Acces`**). Pour un **nouveau** classeur vide, `scripts/init_google_sheet.py` reste suffisant ; pour un classeur **déjà en production pilote**, préférer **`migrate`** puis contrôle visuel de la ligne 1.
+- **Contrôles après migration :** relancer **une fois** `--dry-run` (rapport vide attendu) ; ouvrir l’onglet concerné et vérifier les **en-têtes** + une ligne de test ; lancer Streamlit et passer par un parcours qui **lit/écrit** l’onglet (ex. menu pilote / `Utilisateurs_Acces`).
+- **Graines :** ce script **n’insère pas** les lignes d’exemple (`seed_rows`) : seul `init_google_sheet.py --seed` le fait pour les onglets encore « presque vides ».
 
 ---
 
@@ -672,7 +756,7 @@ Le code (`sereno_core.gcp_credentials`) charge la SA ainsi : **1)** table **`[gc
 | `vertex_location`, `vertex_model` | Région / modèle Vertex. |
 | `OPENAI_API_KEY`, `GEMINI_API_KEY` | Clés API optionnelles. |
 | `notification_priority` | Ordre des canaux de notification artisan (ex. `["sms","call","push"]`). |
-| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | Twilio : SMS + appel vocal (réveil artisan). |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` **ou** table **`[twilio]`** (`account_sid`, `auth_token`, `from_number`, etc.) | Twilio : SMS + appel vocal (réveil artisan). **`TWILIO_FROM_NUMBER`** / **`from_number`** : le numéro **expéditeur attribué par Twilio**, en **E.164** (ex. **+33…** en France, **+1…** si Twilio a provisionné un numéro US — les deux sont valides). **À ne pas** enfermer sous **`[gcp_service_account]`** sans nouveau titre de section : le code **compense** cette erreur TOML courante en relisant aussi ces trois clés dans la table SA. **Numéros des artisans / destinataires (Sheets) :** préférer **+33…** ou **06…** ; éviter la double préfixation **+33336…** (erreur API **21211**). **Erreur 30044** (SMS « Failed ») : **permissions géographiques** (expéditeur **+1** → **+33** : activer la **France** dans **Messaging → Geo permissions**) **ou**, en compte **Trial**, message **trop long** (multi-segments) — le pilote envoie un SMS **compact** ; voir [Twilio 30044](https://www.twilio.com/docs/errors/30044). **Compte d’essai Twilio :** souvent seuls des **numéros vérifiés** reçoivent appels / SMS (erreur **21219** sur les appels) — à régler dans la console Twilio ou passer en compte payant. |
 | `DAILY_API_KEY` | Daily : déclenchement enregistrement (optionnel). |
 
 **Streamlit Cloud :** déclarer les mêmes clés dans **Settings → Secrets** (format TOML), y compris la section `[gcp_service_account]`.
@@ -683,18 +767,21 @@ Le code (`sereno_core.gcp_credentials`) charge la SA ainsi : **1)** table **`[gc
 
 - **Fichier :** `pages/1_Tests_connexions.py`.
 - **But :** vérifications **manuelles** (boutons) : **Google Sheets**, **GCS** (liste d’objets), **Vertex AI** (credentials passés explicitement depuis `[gcp_service_account]` ; repli **Gemini** si clé définie). Charge **`sereno_core.gcp_credentials`**.
+- **Synthèse média (Vertex) :** boutons **vidéo / audio** sur objets **gs://** d’exemple (`gcs_sample_video_object`, `gcs_sample_audio_object`, défauts `video/samplevideo1.mp4` et `audio/sampleaudio1.mp3`) et **upload** d’un court **mp4** → GCS `vertex_uploads/…` puis **`sereno_core/vertex_media_summary.py`** (`summarize_gcs_media_with_vertex`).
 - **Lancement :** `streamlit run Home.py` depuis la racine du dépôt ; URL locale type `http://localhost:8501`.
 - **Dépendance repli Gemini :** paquet **`google-generativeai`** (optionnel). Sur **Streamlit Cloud**, il n’est **pas** dans `requirements.txt` (évite un *backtracking* pip très long avec Vertex qui peut faire échouer l’installation). **En local**, pour le repli clé **`GEMINI_API_KEY`** : `pip install -r requirements-gemini.txt` dans le **même** Python que Streamlit. Le test appelle **`list_models`** et ne retient que les modèles exposant **`generateContent`**.
 
 ### 3.9.2 Script `scripts/init_google_sheet.py`
 
-- **Source des colonnes et graines :** `sereno_core/sheets_schema.py` (aligné sur § 3.6.2).
+- **Source des colonnes et graines :** `sereno_core/sheets_schema.py` (aligné sur § 3.6).
 - **Configuration :** lit `gsheet_id` et le compte de service via **`get_service_account_info`** (TOML `[gcp_service_account]` ou JSON).
 - **Commandes :**
   - `python scripts/init_google_sheet.py` — crée les onglets manquants, écrit les **en-têtes** (ligne 1) si la ligne 1 est vide (sinon conserve).
-  - `python scripts/init_google_sheet.py --seed` — ajoute les **lignes d’exemple** uniquement si l’onglet n’a **aucune donnée sous l’en-tête** (évite d’écraser un classeur déjà rempli).
+  - `python scripts/init_google_sheet.py --seed` — ajoute les **lignes d’exemple** si **aucune cellule non vide** sous l’en-tête (des **lignes vides** seules ne bloquent pas l’insertion ; évite d’écraser des données réelles). Les valeurs sont **reclassées** selon les **intitulés** de la ligne 1 (cas où une colonne **`telephone`** a été ajoutée **en fin d’onglet** par migration). Les colonnes **`enregistre_le`** / **`maj_le`** vides dans la graine reçoivent l’**horodatage UTC** au moment du script.
   - `python scripts/init_google_sheet.py --force-headers` — **réécrit** la ligne 1 (à utiliser avec prudence si les titres ont été personnalisés).
-- **Onglet `Connexions_Test` :** créé avec les mêmes en-têtes que la page de tests Streamlit (`horodatage_utc`, `source`, `statut`, `note`).
+- **Quota API (429) :** `init_google_sheet` et `migrate_google_sheet_schema` listent les onglets **une fois** (`sereno_core/gspread_helpers.py`), espacent les appels et **relancent** après pause en cas de « Quota exceeded » — en définitive, attendre **1–2 min** puis **relancer** la commande si besoin.
+- **Classeur déjà rempli :** pour **ajouter** des colonnes sans effacer les données, utiliser **`scripts/migrate_google_sheet_schema.py`** (**§ 3.6.7**), pas `--force-headers`.
+- **Onglet `Connexions_Test` :** créé avec les mêmes en-têtes que la page de tests Streamlit (y compris colonnes d’audit si migré).
 
 ### 3.9.3 Pages « Cahier des charges » et « Carnet d’échange »
 
@@ -710,7 +797,7 @@ Même barre d’outils (recherche, déplier / replier) ; le CDC utilise en plus 
 - **Export PDF (page Cahier des charges)** : sélection d’une ou plusieurs **parties** ; PDF **UTF-8** via **`fpdf2`** + polices **DejaVu** (`assets/fonts/`) pour les accents français ; mise en page épurée (`sereno_core/cdc_pdf_export.py`). **Couverture** : rappel produit + bloc **« comment lire le menu latéral »** (texte novices, titres et puces indentées — aligné sur `sereno_core/projet_navigation_intro.py`).
 - **Navigation** : sections **Projet**, **Prototype · Client / Artisan / Propriétaire**, **Administration · Pilote** (`Home.py`) — détail § 3.3.2.
 - **Disponibilités (Sheets + Streamlit)** : onglets **`Disponibilite_Mois`**, **`Creneau_Astreinte`**, **`Indisponibilite_Exception`** ; création / en-têtes via **`init_google_sheet.py`**. **Saisie** : pages **`16_Admin_artisan_disponibilites.py`** et **`17_Admin_proprietaire_disponibilites.py`** ; listes **expert** = **une ligne par spécialité** (`Nom — Libellé urgence (expert_id)`), fonction **`disponibilite_expert_options`** dans `sereno_core/sheets_experts.py`. La page **`15_Disponibilite_artisans.py`** reste utilisable en **maintenance / lecture** mais **n’est plus** au menu Projet.
-- **Reporting indicateurs** : page **`19_Projet_reporting_indicateurs.py`** — canevas **3 colonnes** reprenant les indicateurs **§ 1.7** (valeurs **placeholders** jusqu’au branchement BDD / analytics).
+- **Reporting indicateurs** : page **`19_Projet_reporting_indicateurs.py`** + module **`sereno_core/reporting_cdc_indicators.py`** — grille **3 colonnes** (indicateurs **§ 1.7**) avec **composants Streamlit variés** : `st.metric`, `st.progress` (simple et par ligne), `st.line_chart`, `st.area_chart`, `st.scatter_chart` (données d’exemple jusqu’au branchement BDD / analytics).
 - **Conformité réseau / API Pappers** : page **`18_Proto_Proprietaire_conformite.py`** ; interrogation entreprise par **SIREN** ; secret Streamlit **`PAPPERS_API_KEY`** ; client **`sereno_core/pappers_client.py`**. **Coût API** : chaque consultation est facturée — **cache** session en pilote ; en production, stocker la **réponse JSON complète** en base (table SQL **`papers`**, script **`scripts/sql/create_papers_cache_table.sql`**). **Suite produit** : croiser **certifications** et statut **MAIF** hors Pappers (§ 1.8).
 - **Experts du parcours prototype** : chargement prioritaire de l’onglet **`Experts`** du classeur Google Sheets (`gsheet_id` + compte de service) ; fusion des lignes partageant le même `expert_id` ; colonne **`types_autorises`** ou **`types_autorisees`** (codes séparés par `;` ou `,`). Repli local minimal si Sheets indisponible (`sereno_core/sheets_experts.py`).
 - **Propriétaire — activité** : **entonnoir** (jalons du parcours démo), avis avec **type d’intervention**, export JSON des événements.
@@ -756,7 +843,7 @@ Pour le **détail ligne à ligne**, le **mini-glossaire** et les **questions / r
 | **CDC & gouvernance** | `CAHIER_DES_CHARGES.md`, carnet, règle Cursor | En cours / Fait |
 | **Secrets & GCP** | `[gcp_service_account]`, Sheets, GCS, IAM Vertex | En cours |
 | **Streamlit outillage** | Home, tests connexions, CDC / carnet, **métriques** (`14`), **reporting CDC** (`19`), conformité Pappers (`18`) | En cours |
-| **Schéma Sheets** | Onglets + `init_google_sheet.py` | Fait / à valider |
+| **Schéma Sheets** | Onglets + `init_google_sheet.py` + migration **`migrate_google_sheet_schema.py`** | En cours / à valider |
 | **Logique Python** | `sereno_core` (credentials, schéma, MD book) | En cours |
 | **App client** | Expo : parcours urgence → visio → paiement fake | Non démarré |
 | **Visio intégrée** | Salle Daily/Twilio bout en bout | Non démarré |
@@ -784,6 +871,21 @@ Pour le **détail ligne à ligne**, le **mini-glossaire** et les **questions / r
 
 | Version | Date | Auteur | Résumé |
 |---------|------|--------|--------|
+| 1.23 | 2026-04-08 | JOPAI + assistant | **Twilio 30044** : piste **Trial / longueur SMS** + SMS **court** (`artisan_notify`) ; **Reporting** : graphiques variés (`reporting_cdc_indicators`) ; filigrane **pastel** ; accueil urgence : **`new_session_id`** systématique + overlay sans nom expert (`busy_overlay_use_assigned_expert`). |
+| 1.22 | 2026-04-08 | JOPAI + assistant | **`jopai_brand_html`** : titres **H1** + prototype + footer / filigrane / sidebar ; **Vertex 404** : hints + **`vertex_media_summary`** ; **`streamlit-secrets.EXAMPLE.toml`** : `vertex_model` versionné par défaut ; § **3.6.6** ligne 404. |
+| 1.21 | 2026-04-08 | JOPAI + assistant | NPS : **JOP** + *AI* + © turquoise + **SÉRÉNO** pétrole ; `proto_processing_pause` sur urgence, SST (ligne + auto), visio ouvrir/fin, paiement ; accueil projet sans bloc lien/QR verbeux ; Twilio Trial = numéro Sheets **identique** aux **Verified** ; § 1.3.1 + dual-UX (pas de pages app séparées). |
+| 1.20 | 2026-04-08 | JOPAI + assistant | Question NPS : HTML **inline** (pétrole `#0b2745`, turquoise `#0d9488`) car filtrage des `class` Streamlit ; Twilio **21608** / **21219** + expander Tests connexions ; **Vertex** : `vertex_iam_hints` + message 403 enrichi (IAM, API, région). |
+| 1.19 | 2026-04-08 | JOPAI + assistant | Marque **job** + *Séréno* + © (turquoise `#0d9488`, classes `.brand-job` / `.brand-sereno`) ; overlay **spinner** : **nom de l’expert** (champ **nom** Sheets) + « travaille pour vous… » si `assigned_expert` ; règle **`.cursor/rules/sereno-jopai-brand-jobsereno.mdc`** ; question NPS avec libellé marque. |
+| 1.18 | 2026-04-08 | JOPAI + assistant | Calendrier **mois** (décocher jours indispos.) ; **`proto_nav_overlay_once`** visio → paiement ; page **Tests connexions** : synthèse **Vertex** (`vertex_media_summary`, GCS + upload mp4) ; secrets **`gcs_sample_video_object`** / **`gcs_sample_audio_object`** ; note **Twilio 30044** ≠ cache app. |
+| 1.17 | 2026-04-08 | JOPAI + assistant | **NPS** seul (plus d’étoiles) sur le prototype client ; **§ 1.7** indicateur satisfaction ; **§ 1.7.1** assistant semaine + graphique **`disponibilite_calendar_ui`** ; **§ 1.8.1** MAIF / réseau sinistres (mandataires, éligibilité, process) ; **§ 3.1.1** enregistrement visio + transcription (Twilio vs GCP) ; règle **`.cursor/rules/sereno-dual-ux-web-mobile.mdc`**. |
+| 1.16 | 2026-04-08 | JOPAI + assistant | Twilio **30044** : **§ 3.8.1** + **`streamlit-secrets.EXAMPLE.toml`** + replis page **Tests connexions** ; **`_twilio_error_hint`** dans **`artisan_notify`**. |
+| 1.15 | 2026-04-08 | JOPAI + assistant | **`notify_expert`** : SMS / appel avec **motif**, **demandeur** (`client_prenom`), **rassurance**, **lien visio** ; **§ 3.1.1** notification artisan ; rappel **Utilisateurs_Acces** / **`code_pilote`**. |
+| 1.14 | 2026-04-08 | JOPAI + assistant | **`gspread_helpers`** : une requête métadonnées / classeur + **429** retry ; **`init_google_sheet`** / **`migrate_google_sheet_schema`** ; **§ 3.8.1** & **EXAMPLE** : **`TWILIO_FROM_NUMBER`** = E.164 **attribué par Twilio** (**+1** ou **+33**, etc.). |
+| 1.13 | 2026-04-08 | JOPAI + assistant | **`code_pilote`** dans **`Utilisateurs_Acces`** + login multi-profils **`pilot_auth`** ; **`normalize_phone_e164`** (anti **3336…**) ; erreurs Twilio **sans ANSI** ; **CDC** / **EXAMPLE** (Twilio essai **21219**, **21211**). |
+| 1.12 | 2026-04-08 | JOPAI + assistant | **`init_google_sheet --seed`** : alignement graines / en-têtes Sheets ; **6** graines **`Utilisateurs_Acces`** ; **Twilio** depuis **`[gcp_service_account]`** si besoin ; **connexion pilote** en **sidebar** + z-index popover ; fichier **`streamlit-secrets.EXAMPLE.toml`** (ne pas laisser Twilio « coincé » sous la table SA). |
+| 1.11 | 2026-04-08 | JOPAI + assistant | **Twilio** : clés racine ou **`[twilio]`** (`artisan_notify`) ; tests / visio passent **`st.secrets`** ; métriques : exclusion **`build/`** + top Py par **lignes** ; **`init_google_sheet --seed`** : lignes vides sous l’en-tête ignorées. |
+| 1.10 | 2026-04-08 | JOPAI + assistant | **`pilot_auth`** + menu public / connecté (`Home.py`) ; colonne **`telephone`** et graines **Utilisateurs_Acces** (propriétaire + 2 compagnons) ; **§ 3.3.2** & **§ 3.8.1** (Twilio E.164). |
+| 1.9 | 2026-04-08 | JOPAI + assistant | **§ 2.10** profils d’accès & **compagnon** (argumentaire sélection) ; **§ 3.6.2–3.6.7** schéma Sheets horodatage / dates d’effet ; onglet **`Utilisateurs_Acces`** ; script **`migrate_google_sheet_schema.py`** ; `sheets_schema` / écriture **Sessions** & **Paiements** alignées. |
 | 1.8 | 2026-04-08 | JOPAI + assistant | Pip / Cloud : `requirements.txt` sans **`google-generativeai`** (fichier **`requirements-gemini.txt`** optionnel) pour éviter échec ou timeout d’installation sur Streamlit Cloud ; **§ 3.9.1** et **§ 4.4** alignés. |
 | 1.7 | 2026-04-07 | JOPAI + assistant | **§ 1.7.1** interface pilote dispos (Admin · Pilote, sélection **nom — spécialité (id)**, fenêtre sensible, page 15 hors menu Projet) ; **§ 3.3.2** tableau des sections menu ; **§ 3.9.4** reporting `19`, Pappers / table **`papers`**, PDF accueil novices ; indicateur abandon sans « simulé » § 1.7. |
 | 1.6 | 2026-04-07 | JOPAI + assistant | Fonds urgence ; Experts Sheets multi-onglets ; PDF couverture + QR ; § 1.8 MAIF / certifications ; icônes GCS `icones/`. |

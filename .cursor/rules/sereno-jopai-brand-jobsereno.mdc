@@ -1,0 +1,37 @@
+---
+description: Marque affichée JOP + AI + © (turquoise) + SÉRÉNO (pétrole) — alignement JOPAI-BTP.
+globs:
+  - "**/*.{py,md,mdc,toml}"
+  - pages/**
+  - sereno_core/**
+alwaysApply: true
+---
+
+# Marque **JOPAI© SÉRÉNO** (alignement JOPAI-BTP)
+
+Référence : **JOPAI-BTP** — `.cursor/rules/jopai-btp-core.mdc` et `app/ui/themes.py` (`--jopai-turquoise: #0d9488`).
+
+## Forme attendue pour le nom produit (texte visible)
+
+- **JOP** en **gras** + **AI** en *italique* + **©** en **exposant**, le tout en **turquoise** `#0d9488` ;
+- puis **SÉRÉNO** en **majuscules accentuées**, en **bleu pétrole** `#0b2745` (comme le suffixe « BTP » après la marque sur JOPAI-BTP).
+
+## HTML Streamlit (`unsafe_allow_html`)
+
+- **Préférer des styles inline** sur les segments (Streamlit peut retirer les `class`). Exemple type (question NPS dans `proto_ui._nps_question_brand_html`) :
+
+```html
+<span style="font-weight:800;color:#0d9488;">JOP</span><span style="font-style:italic;color:#0d9488;">AI</span><sup style="color:#0d9488;">©</sup>
+<span style="font-weight:750;color:#0b2745;">SÉRÉNO</span>
+```
+
+- Classes optionnelles dans `inject_sereno_prototype_css()` : **`.brand-jop`** / **`.brand-ai`** (comme JOPAI-BTP) ou **`.brand-job`** / **`.brand-sereno`** (héritage).
+
+## Exceptions
+
+- Code technique : `sereno_core`, préfixes `sereno_`, clés, chemins, logs historiques.
+- Titres légaux, citations externes, nom du dépôt Git.
+
+## Voix assistant
+
+- Pour désigner le produit : **JOP***AI*© **SÉRÉNO** (turquoise sur la partie JOPAI©, pétrole sur SÉRÉNO si le canal le permet).

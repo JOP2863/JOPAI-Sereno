@@ -13,13 +13,14 @@ if str(_REPO) not in sys.path:
 
 import streamlit as st  # noqa: E402 — après insertion sys.path
 
+from sereno_core.jopai_brand_html import page_title_h1_html
 from sereno_core.proto_state import ensure_demo_seed
 from sereno_core.streamlit_theme import inject_sereno_prototype_css
 
 inject_sereno_prototype_css()
 ensure_demo_seed()
 
-st.title("Guide du parcours")
+st.markdown(page_title_h1_html("Guide du parcours"), unsafe_allow_html=True)
 st.caption("Vue d’ensemble des écrans **client** et des espaces **artisan** / **propriétaire**.")
 st.info(
     "Dans le menu latéral, le **Prototype** est regroupé en trois sections : "
@@ -39,7 +40,7 @@ Avant la visio, une étape **sécurité** : consignes simples (eau, électricit�
 4. **Mise en relation & visio** — attente courte, appel des experts dans l’ordre défini, puis **lien vers la salle** de visio.
 5. **Session visio** — échange vidéo (salle fournie par le fournisseur configuré : Daily, Twilio, etc.).
 6. **Paiement** — forfait affiché et passage au moyen de paiement selon l’intégration en production.
-7. **Satisfaction** — note 1–5, NPS 0–10, commentaire optionnel.
+7. **Satisfaction** — **NPS** 0–10, commentaire optionnel.
 
 ### Côté artisan
 

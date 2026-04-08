@@ -1,5 +1,5 @@
 """
-Prototype client — satisfaction : grosses étoiles cliquables + NPS par boutons.
+Prototype client — satisfaction : **NPS** uniquement (0–10) + commentaire libre.
 """
 
 from __future__ import annotations
@@ -19,8 +19,6 @@ from sereno_core.proto_state import enforce_client_journey, log_event, p_get, p_
 from sereno_core.proto_ui import (
     proto_page_start,
     proto_processing_pause,
-    reassurance,
-    render_interactive_stars,
     render_nps_buttons,
     step_indicator,
 )
@@ -36,15 +34,6 @@ enforce_client_journey(require_step=7)
 if not p_get("payment_done"):
     st.stop()
 
-reassurance(
-    "Vos réponses sont enregistrées dans le **journal de session** ; elles peuvent aussi alimenter le classeur "
-    "Google (**Sessions**) si celui-ci est relié à l’application."
-)
-
-stars = render_interactive_stars()
-if stars < 1:
-    st.caption("Touchez une **étoile** pour noter de 1 à 5.")
-
 nps = render_nps_buttons()
 if nps is None:
     st.caption("Choisissez une note **NPS de 0 à 10** sur l’échelle colorée ci-dessous.")
@@ -59,27 +48,23 @@ with ccom:
     )
 
 if st.button("Envoyer mon avis", type="primary"):
-    if stars < 1:
-        st.error("Merci de donner une **note en étoiles**.")
-    elif nps is None:
+    if nps is None:
         st.error("Merci de choisir une note **NPS** (0 à 10).")
     else:
         with proto_processing_pause():
-            p_set("satisfaction_stars", stars)
             p_set("satisfaction_nps", nps)
             p_set("satisfaction_comment", (comment or "").strip())
             ut = p_get("urgence_type")
             log_event(
                 "satisfaction",
                 session_id=p_get("session_id"),
-                stars=stars,
                 nps=nps,
                 commentaire=((comment or "").strip()[:500]),
                 urgence=ut,
                 type_intervention=URGENCE_LABELS.get(ut, ut),
             )
             _cmt = (comment or "").strip()
-            _notes = f"★{stars}/5 NPS={nps}"
+            _notes = f"NPS={nps}"
             if _cmt:
                 _notes += f" | {_cmt[:400]}"
             sync_session_sheet(

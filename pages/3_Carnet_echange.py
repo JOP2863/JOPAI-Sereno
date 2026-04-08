@@ -13,9 +13,10 @@ if str(_REPO) not in sys.path:
 
 import streamlit as st
 
+from sereno_core.jopai_brand_html import page_title_h1_html
 from sereno_core.streamlit_markdown_book import render_markdown_book_page
 
-st.title("Carnet d’échange")
+st.markdown(page_title_h1_html("Carnet d’échange"), unsafe_allow_html=True)
 
 render_markdown_book_page(
     repo_root=_REPO,

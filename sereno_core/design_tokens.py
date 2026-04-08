@@ -10,6 +10,8 @@ COLOR_BLEU_ACIER = "#2C5282"  # actions, liens importants, survol
 COLOR_GRIS_BETON = "#F4F7F9"  # fonds, neutre chantier
 COLOR_VERT_SECURITE = "#28A745"  # succès, voyants conformité
 COLOR_OR_DISCRET = "#D4AF37"  # premium, patrimoine — parcimonie
+# Aligné charte JOPAI-BTP (`--jopai-turquoise` dans app/ui/themes.py)
+COLOR_JOPAI_TURQUOISE = "#0d9488"
 COLOR_DASHED_ZONE = "#CBD5E0"  # zones upload / dépôt (pointillés)
 
 # Alias sémantiques (code UI)

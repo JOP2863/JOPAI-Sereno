@@ -15,9 +15,10 @@ import pandas as pd
 import streamlit as st
 
 from sereno_core.gcp_credentials import credentials_for_sheets, get_service_account_info
+from sereno_core.jopai_brand_html import page_title_h1_html
 from sereno_core.sheets_schema import SHEET_TABS
 
-st.title("Disponibilités artisans (Sheets)")
+st.markdown(page_title_h1_html("Disponibilités artisans (Sheets)"), unsafe_allow_html=True)
 st.caption(
     "Structure prévue pour la **fenêtre glissante 12 mois**, saisie par **mois**, **astreinte** et **verrouillage J−30** "
     "(voir **CAHIER_DES_CHARGES.md § 1.7.1**). Les onglets sont créés par **`scripts/init_google_sheet.py`**."

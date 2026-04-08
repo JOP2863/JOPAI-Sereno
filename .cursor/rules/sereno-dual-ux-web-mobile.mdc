@@ -1,0 +1,41 @@
+---
+description: SÉRÉNO — logique métier partagée Web (Streamlit) et mobile (futur) ; éviter la duplication.
+globs:
+  - sereno_core/**/*.py
+  - pages/**/*.py
+  - scripts/**/*.py
+alwaysApply: false
+---
+
+# Double couche d’expérience : Web + mobile
+
+## Principe
+
+- **Une seule source de vérité métier** : modules Python sous `sereno_core/` (ex. `proto_state`, `sheets_*`, `artisan_notify`, `pilot_auth`, règles SST, disponibilités, etc.).
+- **Les pages Streamlit** (`pages/*.py`) et, plus tard, l’**app mobile** (Expo / React Native) ne font qu’**orchestrer** l’UI et appeler `sereno_core` — **pas** de copier-coller de règles métier dans l’UI.
+
+## Pas de pages « app » séparées dans ce dépôt (2026)
+
+- Le parcours client est **le même** ensemble de pages Streamlit (`pages/4_…` à `10_…`) sur **desktop ou mobile** : **pas** de détection automatique du type d’appareil ni d’URL réservée « version app ».
+- L’**application native** cible (**Expo**) n’est **pas** encore livrée ici ; elle consommera la même logique `sereno_core` (voir § Quand tu modifies).
+
+## Quand tu modifies une fonctionnalité
+
+1. **D’abord** : adapter ou étendre `sereno_core` (types, validations, appels API, écriture Sheets).
+2. **Ensuite** : brancher la page Streamlit **et** prévoir que le mobile appellera les **mêmes** fonctions (ou une **API** fine qui les encapsule).
+3. Si un comportement n’existe que dans une page `pages/` : **extraire** vers `sereno_core` avant d’ajouter l’écran mobile équivalent.
+
+## Fichiers typiques
+
+| Rôle | Emplacement |
+|------|-------------|
+| État session prototype client | `sereno_core/proto_state.py` |
+| Experts / Sheets | `sereno_core/sheets_experts.py`, `sheets_schema.py` |
+| Notifications Twilio | `sereno_core/artisan_notify.py` |
+| Auth pilote | `sereno_core/pilot_auth.py` |
+| Disponibilités + assistant calendrier | `sereno_core/sheets_disponibilite_write.py`, `disponibilite_calendar_ui.py` |
+
+## Anti-patterns
+
+- Dupliquer une formule de normalisation téléphone, une règle de disponibilité ou un texte SMS dans **deux** fichiers `pages/` sans passer par `sereno_core`.
+- Implémenter côté mobile une logique **différente** de Streamlit pour le même cas métier.

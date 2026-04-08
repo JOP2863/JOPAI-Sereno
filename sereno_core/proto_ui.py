@@ -7,6 +7,7 @@ from contextlib import contextmanager
 
 import streamlit as st
 
+from sereno_core.jopai_brand_html import nps_recommend_question_html, page_title_h1_html
 from sereno_core.proto_state import ensure_demo_seed, p_get, p_set
 from sereno_core.streamlit_theme import inject_sereno_prototype_css
 from sereno_core.urgence_ambiance import inject_urgence_ambiance_css, render_proto_header_with_urgence
@@ -18,8 +19,10 @@ def proto_page_start(
     subtitle: str = "",
     show_urgence_ambiance: bool = True,
     show_journey_tagline: bool = True,
+    title_brand_suffix: bool = True,
+    busy_overlay_use_assigned_expert: bool = True,
 ) -> None:
-    inject_sereno_prototype_css()
+    inject_sereno_prototype_css(busy_overlay_use_assigned_expert=busy_overlay_use_assigned_expert)
     ensure_demo_seed()
     ut = p_get("urgence_type")
     if show_urgence_ambiance:
@@ -32,9 +35,10 @@ def proto_page_start(
             subtitle=subtitle,
             ut=ut,
             show_journey_tagline=show_journey_tagline,
+            title_brand_suffix=title_brand_suffix,
         )
     else:
-        st.markdown(f"# {title}")
+        st.markdown(page_title_h1_html(title, brand_suffix=title_brand_suffix), unsafe_allow_html=True)
         if subtitle:
             st.caption(subtitle)
 
@@ -62,12 +66,24 @@ def step_indicator(current: int, total: int = 6) -> None:
 @contextmanager
 def proto_processing_pause():
     """
-    Affiche le spinner Streamlit → overlay pastel « Votre artisan travaille pour vous… »
-    (CSS dans `inject_sereno_prototype_css`). À utiliser autour des traitements après soumission.
+    Affiche le spinner Streamlit → overlay pastel (carte : **nom de l’expert** assigné si connu,
+    sinon « Votre artisan travaille pour vous… » — voir `inject_sereno_prototype_css`).
+    À utiliser autour des traitements après soumission.
     """
     with st.spinner(" "):
         time.sleep(0.65)
         yield
+
+
+def proto_nav_overlay_once(flag_key: str) -> None:
+    """
+    Si ``st.session_state[flag_key]`` est vrai, affiche une fois l’overlay (spinner minimal) puis supprime la clé.
+    À poser **après** ``proto_page_start`` (CSS prototype déjà injecté). Définir le flag avant ``st.switch_page``.
+    """
+    if not st.session_state.pop(flag_key, False):
+        return
+    with st.spinner(" "):
+        time.sleep(0.65)
 
 
 def render_interactive_stars(*, state_key: str = "stars_selected") -> int:
@@ -99,10 +115,7 @@ def render_interactive_stars(*, state_key: str = "stars_selected") -> int:
 def render_nps_buttons(*, state_key: str = "nps_selected") -> int | None:
     """NPS 0–10 : une seule rangée, couleurs détracteurs / passifs / promoteurs (CSS global)."""
     current = p_get(state_key, None)
-    st.markdown(
-        "**Recommanderiez-vous SÉRÉNO à un proche ?** "
-        "*(note 0 à 10 : 0–6 insatisfait, 7–8 correct, 9–10 très satisfait — couleurs rouge / jaune / vert)*"
-    )
+    st.markdown(nps_recommend_question_html(), unsafe_allow_html=True)
     st.caption("Échelle de **0** (pas du tout) à **10** (tout à fait).")
     _l, row, _r = st.columns([0.04, 0.92, 0.04])
     with row:

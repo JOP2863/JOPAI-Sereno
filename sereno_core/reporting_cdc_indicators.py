@@ -1,7 +1,9 @@
 """
 Indicateurs de pilotage prévus au cahier des charges — grille type « canevas » (3 colonnes).
 
-Les valeurs affichées sont des **placeholders** jusqu’à branchement des sources (BDD, Sheets, analytics).
+Les valeurs affichées sont des **placeholders** jusqu’au branchement des sources (BDD, Sheets, analytics).
+On varie les **composants Streamlit** (métriques, `line_chart`, `area_chart`, `scatter_chart`, `progress`)
+plutôt que d’empiler des barres verticales partout.
 """
 
 from __future__ import annotations
@@ -18,7 +20,15 @@ class IndicatorSpec:
     title: str
     definition: str
     operational: str
-    cell_kind: Literal["metric", "chart", "metrics_pair"]
+    cell_kind: Literal[
+        "metric",
+        "metrics_pair",
+        "progress_rows",
+        "progress_single",
+        "line_trend",
+        "area_trend",
+        "scatter_demo",
+    ]
 
 
 # Ordre = remplissage ligne par ligne (3 colonnes)
@@ -33,13 +43,13 @@ INDICATORS: list[IndicatorSpec] = [
         "Taux de couverture 24/7",
         "Part du temps (semaine type) où au moins un artisan éligible est joignable ou en astreinte.",
         "Rassurer l’usager sur la disponibilité.",
-        "metric",
+        "progress_single",
     ),
     IndicatorSpec(
         "Couverture par type d’urgence",
         "Pour chaque bouton (eau, élec, …), part des créneaux couverts.",
         "Équilibrer le réseau par métier.",
-        "chart",
+        "progress_rows",
     ),
     IndicatorSpec(
         "Délai médian de première réponse",
@@ -48,28 +58,28 @@ INDICATORS: list[IndicatorSpec] = [
         "metric",
     ),
     IndicatorSpec(
-        "Taux d’abandon",
-        "Arrêt avant fin checklist / avant visio / avant paiement.",
+        "Taux d’abandon (tendance)",
+        "Arrêt avant fin checklist / avant visio / avant paiement — suivi dans le temps.",
         "Frictions UX.",
-        "metric",
+        "line_trend",
     ),
     IndicatorSpec(
         "Durée médiane de session visio",
-        "Temps passé en visio.",
+        "Temps passé en visio (profil journalier type).",
         "Charge experts.",
-        "metric",
+        "area_trend",
     ),
     IndicatorSpec(
-        "Satisfaction (étoiles + NPS)",
+        "Satisfaction (NPS 0–10)",
         "Après session.",
         "Qualité du service.",
         "metrics_pair",
     ),
     IndicatorSpec(
-        "Taux de résolution perçue",
-        "« Problème mieux maîtrisé » oui/non.",
+        "Résolution perçue vs volume",
+        "« Problème mieux maîtrisé » croisé avec le nombre de sessions (exemple).",
         "Efficacité à distance.",
-        "metric",
+        "scatter_demo",
     ),
     IndicatorSpec(
         "Taux de recontact sous 24 h",
@@ -107,19 +117,55 @@ def _render_cell(spec: IndicatorSpec) -> None:
     elif spec.cell_kind == "metrics_pair":
         c1, c2 = st.columns(2)
         with c1:
-            st.metric("Note moyenne", "—", help="Étoiles 1–5")
+            st.metric("Note moyenne", "—", help="Étoiles 1–5 (à brancher)")
         with c2:
-            st.metric("NPS moyen", "—", help="0–10")
+            st.metric("NPS moyen", "—", help="0–10 (à brancher)")
 
-    elif spec.cell_kind == "chart":
+    elif spec.cell_kind == "progress_single":
+        st.progress(0.72, text="Ex. 72 % — données fictives")
+        st.caption("Jauge unique (`st.progress`) — à relier à la vraie mesure 24/7.")
+
+    elif spec.cell_kind == "progress_rows":
         df = pd.DataFrame(
             {
                 "Type": ["Eau", "Élec", "Gaz", "Chauff.", "Serr."],
-                "Couverture (ex.)": [72, 65, 58, 70, 80],
+                "Couverture (%)": [72, 65, 58, 70, 80],
             }
         )
-        st.bar_chart(df.set_index("Type"), height=200)
-        st.caption("Données d’exemple — à remplacer par les vraies mesures.")
+        for _, row in df.iterrows():
+            st.caption(f"**{row['Type']}** — {int(row['Couverture (%)'])} %")
+            st.progress(min(1.0, float(row["Couverture (%)"]) / 100.0))
+        st.caption("Préférable aux barres verticales quand on compare **plusieurs petits taux**.")
+
+    elif spec.cell_kind == "line_trend":
+        df = pd.DataFrame(
+            {
+                "Semaine": [f"S{i}" for i in range(1, 9)],
+                "Abandon % (ex.)": [12.0, 14.0, 11.0, 15.0, 13.0, 12.0, 10.0, 9.0],
+            }
+        )
+        st.line_chart(df.set_index("Semaine"), height=200)
+        st.caption("Série temporelle (`st.line_chart`) — données d’exemple.")
+
+    elif spec.cell_kind == "area_trend":
+        df = pd.DataFrame(
+            {
+                "Jour": [f"J{i}" for i in range(1, 15)],
+                "Minutes médianes (ex.)": [4 + (i % 5) for i in range(14)],
+            }
+        )
+        st.area_chart(df.set_index("Jour"), height=200)
+        st.caption("Profil lissé (`st.area_chart`) — à remplacer par agrégation réelle.")
+
+    elif spec.cell_kind == "scatter_demo":
+        df = pd.DataFrame(
+            {
+                "Sessions (ex.)": [10, 25, 40, 8, 30, 18, 22],
+                "% résolution perçue (ex.)": [62, 71, 68, 55, 74, 66, 70],
+            }
+        )
+        st.scatter_chart(df, x="Sessions (ex.)", y="% résolution perçue (ex.)", height=220)
+        st.caption("Nuage (`st.scatter_chart`) — utile pour repérer anomalies volume / qualité.")
 
 
 def render_reporting_cdc_grid() -> None:

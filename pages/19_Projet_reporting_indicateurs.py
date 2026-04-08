@@ -16,9 +16,10 @@ if str(_REPO) not in sys.path:
 
 import streamlit as st
 
+from sereno_core.jopai_brand_html import page_title_h1_html
 from sereno_core.reporting_cdc_indicators import INDICATORS, render_reporting_cdc_grid
 
-st.title("Reporting — indicateurs de pilotage")
+st.markdown(page_title_h1_html("Reporting — indicateurs de pilotage"), unsafe_allow_html=True)
 st.caption(
     "Source : **cahier des charges** (indicateurs prévus à date). "
     "Canevas 3 colonnes — à alimenter avec les données réelles."

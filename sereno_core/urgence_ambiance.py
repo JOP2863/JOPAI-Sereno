@@ -6,6 +6,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from sereno_core.jopai_brand_html import page_title_h1_html
 from sereno_core.proto_checklists import URGENCE_LABELS
 
 # Pastels encore plus lisibles (~30–40 % plus soutenus)
@@ -133,13 +134,14 @@ def render_proto_header_with_urgence(
     subtitle: str = "",
     ut: str | None,
     show_journey_tagline: bool = True,
+    title_brand_suffix: bool = True,
 ) -> None:
     """
     Titre + sous-titre + accroche parcours à gauche ; **icône ~2×** à droite, alignée en **haut**
     (même ligne que le titre).
     """
     if not ut or ut not in _URGENCE_STYLE:
-        st.markdown(f"# {title}")
+        st.markdown(page_title_h1_html(title, brand_suffix=title_brand_suffix), unsafe_allow_html=True)
         if subtitle:
             st.caption(subtitle)
         return
@@ -149,7 +151,7 @@ def render_proto_header_with_urgence(
     except TypeError:
         left, right = st.columns([3.55, 1.45])
     with left:
-        st.markdown(f"# {title}")
+        st.markdown(page_title_h1_html(title, brand_suffix=title_brand_suffix), unsafe_allow_html=True)
         if subtitle:
             st.caption(subtitle)
         if show_journey_tagline:

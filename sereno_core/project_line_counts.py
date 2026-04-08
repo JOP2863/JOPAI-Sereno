@@ -43,12 +43,18 @@ _LOC_EXCLUDE_DIRNAMES: frozenset[str] = frozenset(
         "__pycache__",
         "node_modules",
         ".cursor",
+        "build",
+        "dist",
+        ".eggs",
     }
 )
 
 
 @st.cache_data(show_spinner=False, ttl=600)
 def top_py_files_by_lines(root_dir: str, limit: int = 10) -> list[dict[str, int | str]]:
+    """
+    Fichiers `.py` du dépôt (hors `build/`, `.venv`, etc.), triés par **nombre de lignes** décroissant.
+    """
     root = Path(root_dir).resolve()
     items: list[dict[str, int | str]] = []
     for dirpath, dirnames, filenames in os.walk(root):
@@ -64,20 +70,17 @@ def top_py_files_by_lines(root_dir: str, limit: int = 10) -> list[dict[str, int 
             if size_bytes <= 0:
                 continue
             try:
+                txt = p.read_text(encoding="utf-8", errors="ignore")
+            except Exception:
+                continue
+            loc_total = len(txt.splitlines())
+            try:
                 rel_path = str(p.relative_to(root)).replace("\\", "/")
             except Exception:
                 rel_path = str(p)
-            items.append({"path": rel_path, "size_bytes": size_bytes})
-    items.sort(key=lambda x: int(x.get("size_bytes") or 0), reverse=True)
-    out: list[dict[str, int | str]] = []
-    for it in items[: max(0, int(limit))]:
-        rel_path = str(it.get("path") or "")
-        try:
-            loc_total = len((root / rel_path).read_text(encoding="utf-8", errors="ignore").splitlines())
-        except Exception:
-            loc_total = 0
-        out.append({**it, "loc_total": loc_total})
-    return out
+            items.append({"path": rel_path, "size_bytes": size_bytes, "loc_total": loc_total})
+    items.sort(key=lambda x: int(x.get("loc_total") or 0), reverse=True)
+    return items[: max(0, int(limit))]
 
 
 @st.cache_data(show_spinner=False, ttl=600)

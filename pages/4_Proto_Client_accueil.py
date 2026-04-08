@@ -20,16 +20,16 @@ from sereno_core.proto_state import (
     new_session_id,
     p_get,
     p_set,
-    reset_client_journey,
     sync_session_sheet,
 )
-from sereno_core.proto_ui import proto_page_start, reassurance, step_indicator
+from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
 from sereno_core.urgence_ambiance import JOURNEY_TAGLINE
 
 proto_page_start(
     title="En quoi pouvons-nous vous aider ?",
     subtitle="",
     show_urgence_ambiance=False,
+    busy_overlay_use_assigned_expert=False,
 )
 st.markdown(
     f"""
@@ -47,20 +47,32 @@ reassurance(
     "Réponse humaine d’un expert du bâtiment."
 )
 
-with st.expander("Recommencer le parcours depuis zéro"):
-    if st.button("Réinitialiser le parcours", type="secondary"):
-        reset_client_journey()
-        st.rerun()
+st.markdown(
+    """
+<style>
+/* Accueil urgence : boutons pleine largeur du bloc, hauteur homogène */
+div.sereno-urgence-buttons button[data-testid="baseButton-primary"] {
+    min-height: 2.75rem;
+    width: 100%;
+}
+</style>
+""",
+    unsafe_allow_html=True,
+)
 
 st.divider()
 st.markdown("### Choisissez votre situation")
 
-for code, label in URGENCE_LABELS.items():
-    if st.button(label, key=f"urg_{code}", type="primary", use_container_width=True):
-        if not p_get("session_id"):
-            new_session_id()
-        clear_client_branch_after_urgence_change()
-        p_set("urgence_type", code)
-        log_event("urgence_choisie", urgence=code, session_id=p_get("session_id"))
-        sync_session_sheet({"type_code": code, "statut": "URGENCE_CHOISIE"})
-        st.switch_page("pages/5_Proto_Client_informations.py")
+_fcol, _ = st.columns([0.68, 0.32])
+with _fcol:
+    st.markdown('<div class="sereno-urgence-buttons">', unsafe_allow_html=True)
+    for code, label in URGENCE_LABELS.items():
+        if st.button(label, key=f"urg_{code}", type="primary", use_container_width=True):
+            with proto_processing_pause():
+                clear_client_branch_after_urgence_change()
+                new_session_id()
+                p_set("urgence_type", code)
+                log_event("urgence_choisie", urgence=code, session_id=p_get("session_id"))
+                sync_session_sheet({"type_code": code, "statut": "URGENCE_CHOISIE"})
+                st.switch_page("pages/5_Proto_Client_informations.py")
+    st.markdown("</div>", unsafe_allow_html=True)

@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
-# Référence doc / init (`sheets_schema` — onglet Sessions)
+# Référence doc / init (`sheets_schema` — onglet Sessions, colonnes minimales attendues)
 SESSION_HEADERS: list[str] = [
     "session_id",
     "created_at",
@@ -25,6 +25,8 @@ SESSION_HEADERS: list[str] = [
     "prix_centimes_factures",
     "debut_visio",
     "fin_visio",
+    "enregistre_le",
+    "maj_le",
 ]
 
 
@@ -117,8 +119,15 @@ def try_upsert_session_row(
         row_dict[k] = str(val).strip()
 
     row_dict["session_id"] = sid
+    now = _now_iso()
     if row_num is None and not row_dict.get("created_at"):
-        row_dict["created_at"] = _now_iso()
+        row_dict["created_at"] = now
+    if row_num is None:
+        if "enregistre_le" in row_dict and not str(row_dict.get("enregistre_le") or "").strip():
+            row_dict["enregistre_le"] = now
+    else:
+        if "maj_le" in row_dict:
+            row_dict["maj_le"] = now
 
     line_out = [row_dict.get(h, "") for h in headers]
 

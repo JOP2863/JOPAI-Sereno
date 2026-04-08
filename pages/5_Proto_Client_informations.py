@@ -109,7 +109,7 @@ if submitted:
                 "statut": "INFOS_SAISIES",
             }
         )
-    st.switch_page("pages/6_Proto_Client_SST.py")
+        st.switch_page("pages/6_Proto_Client_SST.py")
 
 if st.button("← Retour au choix du type"):
     st.switch_page("pages/4_Proto_Client_accueil.py")

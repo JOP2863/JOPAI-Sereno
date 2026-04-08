@@ -15,10 +15,11 @@ import streamlit as st
 
 from sereno_core.app_urls import client_urgency_entry_url
 from sereno_core.cdc_pdf_export import build_cdc_pdf_bytes
+from sereno_core.jopai_brand_html import page_title_h1_html
 from sereno_core.md_chapters import parse_cdc_by_parties
 from sereno_core.streamlit_markdown_book import render_markdown_book_page
 
-st.title("Cahier des charges — SÉRÉNO")
+st.markdown(page_title_h1_html("Cahier des charges"), unsafe_allow_html=True)
 
 cdc_path = _REPO / "CAHIER_DES_CHARGES.md"
 if not cdc_path.is_file():

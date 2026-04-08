@@ -14,7 +14,8 @@ alwaysApply: true
 
 ## Soumission avec calcul / attente côté « serveur » (script Streamlit)
 
-- Lorsqu’une **soumission de formulaire** déclenche un **traitement** (écriture, appel API, logique lourde), entourer le travail d’un `st.spinner` minimal pour activer l’**overlay pastel** définie dans `inject_sereno_prototype_css()` (voile + message **« Votre artisan travaille pour vous… »**), via le helper `proto_processing_pause()` dans `sereno_core/proto_ui.py`.
+- Lorsqu’une **soumission de formulaire** déclenche un **traitement** (écriture, appel API, logique lourde), entourer le travail d’un `st.spinner` minimal pour activer l’**overlay pastel** définie dans `inject_sereno_prototype_css()` (voile + carte : **nom de l’expert** issu de `assigned_expert.nom` si activé et déjà sélectionné, sinon « Votre artisan travaille pour vous… » — sur l’**accueil urgence**, `proto_page_start(..., busy_overlay_use_assigned_expert=False)` pour éviter un nom « collé » d’une session précédente), via le helper `proto_processing_pause()` dans `sereno_core/proto_ui.py`.
+- Pour une **arrivée** sur une page prototype après `st.switch_page` (ex. **visio**, **paiement**), poser un flag dans `st.session_state` puis appeler **`proto_nav_overlay_once(flag_key)`** juste après `proto_page_start()` sur la page cible, afin d’afficher la même overlay au chargement.
 - Ne pas utiliser `st.balloons()` dans les parcours prototype SÉRÉNO (effet jugé inadapté au ton « urgence / réassurance »).
 
 ## Largeur du contenu principal (~70 %)

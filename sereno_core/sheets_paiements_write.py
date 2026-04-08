@@ -48,18 +48,34 @@ def try_append_paiement_row(
 
     pid = f"PAY-{uuid.uuid4().hex[:10].upper()}"
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    row = [
-        pid,
-        sid,
-        str(int(montant_centimes)),
-        str(mode_paiement).strip(),
-        str(statut).strip(),
-        str(stripe_id or "").strip(),
-        now,
-        str(notes or "").strip()[:500],
-    ]
     try:
-        ws.append_row(row, value_input_option="USER_ENTERED")
+        headers = [str(h or "").strip() for h in ws.row_values(1)]
+    except Exception as e:
+        return False, str(e)
+    if not headers or "paiement_id" not in headers:
+        return False, "en-têtes Paiements invalides (lancez migrate_google_sheet_schema.py)"
+
+    vals: dict[str, str] = {h: "" for h in headers}
+    vals.update(
+        {
+            "paiement_id": pid,
+            "session_id": sid,
+            "montant_centimes": str(int(montant_centimes)),
+            "mode_paiement": str(mode_paiement).strip(),
+            "statut": str(statut).strip(),
+            "stripe_id": str(stripe_id or "").strip(),
+            "created_at": now,
+            "notes": str(notes or "").strip()[:500],
+        }
+    )
+    if "enregistre_le" in vals and not vals["enregistre_le"]:
+        vals["enregistre_le"] = now
+    if "maj_le" in vals:
+        vals["maj_le"] = now
+
+    line_out = [vals.get(h, "") for h in headers]
+    try:
+        ws.append_row(line_out, value_input_option="USER_ENTERED")
     except Exception as e:
         return False, str(e)
     return True, f"Paiements : {pid}"

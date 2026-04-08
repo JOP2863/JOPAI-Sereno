@@ -94,11 +94,12 @@ if events:
         sdf = pd.DataFrame(sat)
         cols = [
             c
-            for c in ["ts", "session_id", "type_intervention", "urgence", "stars", "nps", "commentaire"]
+            for c in ["ts", "session_id", "type_intervention", "urgence", "nps", "commentaire"]
             if c in sdf.columns
         ]
         st.dataframe(sdf[cols], use_container_width=True, hide_index=True)
-        st.metric("Note moyenne globale", f"{pd.to_numeric(sdf['stars'], errors='coerce').mean():.2f} / 5")
+        if "nps" in sdf.columns:
+            st.metric("NPS moyen (global)", f"{pd.to_numeric(sdf['nps'], errors='coerce').mean():.2f} / 10")
     else:
         st.caption("Aucun avis pour l’instant.")
 

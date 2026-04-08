@@ -8,44 +8,30 @@ import io
 
 import streamlit as st
 
-from sereno_core.app_urls import client_urgency_entry_url, streamlit_app_base_url
+from sereno_core.app_urls import client_urgency_entry_url
+from sereno_core.jopai_brand_html import page_title_h1_html
 from sereno_core.projet_navigation_intro import COVER_INTRO_MARKDOWN, NAVIGATION_INTRO_MARKDOWN
 
-st.title("SÉRÉNO — JOPAI BTP")
+st.markdown(page_title_h1_html("Accueil"), unsafe_allow_html=True)
 
 st.markdown(COVER_INTRO_MARKDOWN)
 st.markdown(NAVIGATION_INTRO_MARKDOWN)
 
 CLIENT_ENTRY_URL = client_urgency_entry_url()
-APP_BASE = streamlit_app_base_url()
 
-q1, q2 = st.columns([1, 2])
-with q1:
-    try:
-        import qrcode
+try:
+    import qrcode
 
-        qr = qrcode.QRCode(version=1, box_size=3, border=2)
-        qr.add_data(CLIENT_ENTRY_URL)
-        qr.make(fit=True)
-        img = qr.make_image(fill_color="#003366", back_color="white")
-        buf = io.BytesIO()
-        img.save(buf, format="PNG")
-        st.image(
-            buf.getvalue(),
-            width=200,
-            caption=(
-                "Flashez pour ouvrir l’accueil urgence client (« En quoi pouvons-nous vous aider ? »). "
-                f"Lien : {CLIENT_ENTRY_URL}"
-            ),
-        )
-    except Exception:
-        st.caption(
-            f"Parcours client : **{CLIENT_ENTRY_URL}** (installez `qrcode[pil]` pour afficher le QR code)."
-        )
-with q2:
-    st.markdown(
-        f"**Lien direct accueil urgence (client) :** [{CLIENT_ENTRY_URL}]({CLIENT_ENTRY_URL}) — redirection fiable vers le choix du type d’intervention.\n\n"
-        f"**Base appli (accueil général) :** [{APP_BASE}]({APP_BASE}/)"
+    qr = qrcode.QRCode(version=1, box_size=3, border=2)
+    qr.add_data(CLIENT_ENTRY_URL)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="#003366", back_color="white")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    st.image(buf.getvalue(), width=200, caption="Flashez pour ouvrir l’accueil urgence client")
+except Exception:
+    st.caption(
+        f"Parcours client : **{CLIENT_ENTRY_URL}** (installez `qrcode[pil]` pour afficher le QR code)."
     )
 
 with st.expander("Comment simuler « l’installation sur le téléphone » ?"):

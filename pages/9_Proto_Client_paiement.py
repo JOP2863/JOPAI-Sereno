@@ -23,7 +23,13 @@ from sereno_core.proto_state import (
     p_set,
     sync_session_sheet,
 )
-from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
+from sereno_core.proto_ui import (
+    proto_nav_overlay_once,
+    proto_page_start,
+    proto_processing_pause,
+    reassurance,
+    step_indicator,
+)
 
 FORFAIT_EUR = 50
 
@@ -31,6 +37,7 @@ proto_page_start(
     title="Règlement de la session",
     subtitle=f"Montant de la session : **{FORFAIT_EUR} €**.",
 )
+proto_nav_overlay_once("_sereno_overlay_paiement")
 step_indicator(6, 7)
 
 enforce_client_journey(require_step=6)
@@ -103,8 +110,9 @@ if ok:
                 statut="ENREGISTRE",
                 notes="Parcours prototype Streamlit",
             )
-        st.success("Paiement enregistré pour la session pilote. Merci !")
-        st.switch_page("pages/10_Proto_Client_satisfaction.py")
+            st.success("Paiement enregistré pour la session pilote. Merci !")
+            st.switch_page("pages/10_Proto_Client_satisfaction.py")
 
 if st.button("← Retour à la visio"):
-    st.switch_page("pages/8_Proto_Client_visio.py")
+    with proto_processing_pause():
+        st.switch_page("pages/8_Proto_Client_visio.py")
