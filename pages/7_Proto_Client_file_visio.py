@@ -17,9 +17,11 @@ import streamlit as st
 
 from sereno_core.proto_checklists import URGENCE_LABELS
 from sereno_core.proto_helpers import pick_expert_for_urgence
-from sereno_core.proto_state import log_event, p_get, p_set, sync_session_sheet
+from sereno_core.artisan_notify import notify_expert
+from sereno_core.proto_state import enforce_client_journey, log_event, p_get, p_set, sync_session_sheet
 from sereno_core.proto_ui import proto_page_start, reassurance, step_indicator
 from sereno_core.sheets_experts import canonicalize_type_list
+from sereno_core.visio_recording import build_visio_object_prefix, daily_api_key_from_secrets, daily_start_recording
 
 proto_page_start(
     title="Mise en relation avec un expert",
@@ -27,9 +29,10 @@ proto_page_start(
 )
 step_indicator(4, 7)
 
+enforce_client_journey(require_step=3)
+
 ut = p_get("urgence_type")
 if not ut or not p_get("sst_validated"):
-    st.warning("Validez d’abord l’étape **Sécurité (SST)**.")
     st.stop()
 
 reassurance(
@@ -43,8 +46,8 @@ elig.sort(key=lambda a: int(a.get("ordre", 99)))
 
 if not elig:
     st.error(
-        "Aucun expert de démonstration n’est référencé pour ce type d’urgence. "
-        "Revenez à l’accueil et choisissez une autre situation, ou complétez la liste des artisans (pilote)."
+        "Aucun expert n’est référencé pour ce type d’urgence. "
+        "Revenez à l’accueil et choisissez une autre situation, ou complétez la liste des artisans."
     )
     with st.expander("Diagnostic — experts chargés (pilote)"):
         st.markdown(
@@ -133,16 +136,60 @@ if st.button("Ouvrir la salle de visio", type="primary"):
     _sid = str(p_get("session_id") or "")
     _room = re.sub(r"[^a-zA-Z0-9]", "", f"Sereno{_sid}")[:48] or "SerenoDemo"
     _jitsi = f"https://meet.jit.si/{_room}#config.prejoinPageEnabled=false"
+    _integrated = ""
+    try:
+        _integrated = str(st.secrets.get("daily_room_url") or st.secrets.get("DAILY_ROOM_URL") or st.secrets.get("twilio_video_room_url") or "").strip()
+    except Exception:
+        _integrated = ""
+    _room_url = _integrated or _jitsi
     _debut = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     log_event("visio_debut", session_id=p_get("session_id"))
     sync_session_sheet(
         {
             "debut_visio": _debut,
-            "room_url": _jitsi,
+            "room_url": _room_url,
             "type_code": ut,
             "statut": "VISIO_DEMARREE",
         }
     )
+
+    # Notifier l’artisan (SMS → appel → push selon secrets)
+    try:
+        ex = p_get("assigned_expert") or {}
+        results = notify_expert(
+            secrets=dict(st.secrets),
+            expert=ex,
+            room_url=_room_url,
+            session_id=str(p_get("session_id") or ""),
+            urgence_label=str(URGENCE_LABELS.get(ut, ut)),
+        )
+        if results:
+            first_ok = next((r for r in results if r.ok), None)
+            if first_ok:
+                sync_session_sheet({"statut": f"ARTISAN_NOTIFIE_{first_ok.channel.upper()}"})
+            else:
+                sync_session_sheet({"statut": "ARTISAN_NOTIFIE_ECHEC"})
+    except Exception:
+        pass
+
+    # Enregistrement visio (Daily) — optionnel
+    try:
+        api_key = daily_api_key_from_secrets(dict(st.secrets))
+        if api_key and ".daily.co/" in _room_url:
+            prefix = build_visio_object_prefix(
+                client_pseudo=str(p_get("client_prenom") or "client"),
+                session_id=str(p_get("session_id") or ""),
+                urgence_code=str(ut),
+                urgence_label=str(URGENCE_LABELS.get(ut, ut)),
+            )
+            ok_rec, rec = daily_start_recording(api_key=api_key, room_url=_room_url)
+            if ok_rec:
+                p_set("daily_recording", rec)
+                p_set("visio_object_prefix", prefix)
+                sync_session_sheet({"notes_cloture": f"DAILY_RECORDING_START {prefix}"})
+    except Exception:
+        pass
+
     st.switch_page("pages/8_Proto_Client_visio.py")
 
 if st.button("← Retour"):

@@ -323,6 +323,27 @@ Les **textes SST**, **CGU**, **mentions légales** et **politique de rembourseme
 - **Comportement UI :** si une URL est renseignée, le parcours client affiche un **lien principal** « ouvrir la salle » vers ce fournisseur ; sinon, **maquette** / **Jitsi public** uniquement pour la démo, avec rappel « ne pas diffuser d’infos sensibles ».
 - **Étape suivante produit :** création de salles **côté serveur** (token **Daily** ou **Twilio**), durée de vie courte, enregistrement du `room_url` dans l’onglet **`Sessions`** (Sheets puis BDD).
 
+**Notification artisan (pilote → produit) :**
+
+- **Déclenchement :** au clic **« Ouvrir la salle de visio »**, l’app tente de prévenir l’artisan assigné (données depuis l’onglet **`Experts`**, colonne `telephone`). Cela permet qu’« ça sonne » côté artisan.
+- **Canaux supportés (priorité configurable)** : **SMS**, puis **appel vocal**, puis **push** (application mobile). L’ordre est configurable via `notification_priority` dans les secrets.
+- **Implémentation pilote (Streamlit)** : Twilio pour **SMS** + **appel** (réveil vocal). Le push est un stub (cible Expo).
+
+**Enregistrement visio (optionnel) :**
+
+- Si une salle **Daily** est utilisée et qu’une clé **`DAILY_API_KEY`** est fournie, le pilote peut déclencher le **start/stop recording** via l’API Daily.
+- La cible produit consiste à **stocker** l’enregistrement (ou ses sorties) dans le bucket GCS `jopai-sereno` et à référencer le chemin objet depuis `Sessions`.
+
+**Règle de nommage des fichiers visio (GCS) :**
+
+Préfixe recommandé (dossiers) :
+
+`visio/YYYY/MM/DD/<pseudo_client>__<session_id>__<code>-<libelle>/`
+
+Exemple :
+
+`visio/2026/04/08/Marie__636B75AD__EAU-Eau/`
+
 ## 3.2 Compromis technique pour Cursor : l’app hybride (Expo)
 
 **Choix :** **React Native (Expo)** pour le prototype et le pilote.
@@ -650,6 +671,9 @@ Le code (`sereno_core.gcp_credentials`) charge la SA ainsi : **1)** table **`[gc
 | `service_account_json_path` | Repli : chemin relatif au dépôt vers un `.json` SA. |
 | `vertex_location`, `vertex_model` | Région / modèle Vertex. |
 | `OPENAI_API_KEY`, `GEMINI_API_KEY` | Clés API optionnelles. |
+| `notification_priority` | Ordre des canaux de notification artisan (ex. `["sms","call","push"]`). |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | Twilio : SMS + appel vocal (réveil artisan). |
+| `DAILY_API_KEY` | Daily : déclenchement enregistrement (optionnel). |
 
 **Streamlit Cloud :** déclarer les mêmes clés dans **Settings → Secrets** (format TOML), y compris la section `[gcp_service_account]`.
 

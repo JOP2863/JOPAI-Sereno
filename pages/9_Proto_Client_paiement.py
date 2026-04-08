@@ -15,7 +15,14 @@ if str(_REPO) not in sys.path:
 import streamlit as st
 
 from sereno_core.proto_helpers import STRIPE_TEST_CARD_SUCCESS, validate_card_fields
-from sereno_core.proto_state import append_paiement_sheet_row, log_event, p_get, p_set, sync_session_sheet
+from sereno_core.proto_state import (
+    append_paiement_sheet_row,
+    enforce_client_journey,
+    log_event,
+    p_get,
+    p_set,
+    sync_session_sheet,
+)
 from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
 
 FORFAIT_EUR = 50
@@ -26,8 +33,9 @@ proto_page_start(
 )
 step_indicator(6, 7)
 
+enforce_client_journey(require_step=6)
+
 if not p_get("visio_done"):
-    st.warning("Terminez d’abord l’étape **Visio**.")
     st.stop()
 
 reassurance(

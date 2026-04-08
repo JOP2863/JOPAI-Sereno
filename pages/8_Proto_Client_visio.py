@@ -16,7 +16,8 @@ if str(_REPO) not in sys.path:
 import streamlit as st
 import streamlit.components.v1 as components
 
-from sereno_core.proto_state import log_event, p_get, p_set, sync_session_sheet
+from sereno_core.proto_state import enforce_client_journey, log_event, p_get, p_set, sync_session_sheet
+from sereno_core.visio_recording import daily_api_key_from_secrets, daily_stop_recording
 
 def _secret_get(key: str) -> str:
     try:
@@ -32,8 +33,9 @@ proto_page_start(
 )
 step_indicator(5, 7)
 
+enforce_client_journey(require_step=4)
+
 if not p_get("assigned_expert"):
-    st.warning("Passez d’abord par la **mise en relation**.")
     st.stop()
 
 ex = p_get("assigned_expert")
@@ -121,4 +123,15 @@ with c2:
                 "statut": "VISIO_TERMINEE",
             }
         )
+
+        # Stop recording Daily si démarré (optionnel)
+        try:
+            api_key = daily_api_key_from_secrets(dict(st.secrets))
+            if api_key and ".daily.co/" in _room_url:
+                ok_stop, _data = daily_stop_recording(api_key=api_key, room_url=_room_url)
+                if ok_stop:
+                    sync_session_sheet({"statut": "VISIO_TERMINEE_RECORDING_STOP"})
+        except Exception:
+            pass
+
         st.switch_page("pages/9_Proto_Client_paiement.py")

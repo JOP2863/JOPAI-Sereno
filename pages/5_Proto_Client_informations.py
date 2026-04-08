@@ -23,7 +23,7 @@ _URG_BAND = {
     "CHAUFF": ("#00695c", "#e0f2f1", "#004d40"),
     "SERR": ("#455a64", "#eceff1", "#37474f"),
 }
-from sereno_core.proto_state import log_event, p_get, p_set, sync_session_sheet
+from sereno_core.proto_state import enforce_client_journey, log_event, p_get, p_set, sync_session_sheet
 from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
 
 proto_page_start(
@@ -32,9 +32,10 @@ proto_page_start(
 )
 step_indicator(2, 7)
 
+enforce_client_journey(require_step=1)
+
 ut = p_get("urgence_type")
 if not ut:
-    st.warning("Commencez par l’écran **Accueil urgence**.")
     st.stop()
 
 reassurance(
@@ -59,14 +60,14 @@ st.markdown(
 with st.form("infos_client"):
     fp, _ = st.columns([0.5, 0.5])
     with fp:
-        prenom = st.text_input("Prénom ou pseudo", placeholder="Ex. Marie", max_chars=80)
+        prenom = st.text_input("Prénom ou pseudo", value="JOP", max_chars=80)
     t1, t2 = st.columns([0.14, 0.86])
     with t1:
         st.text_input("Indicatif", value="+33", disabled=True, help="France métropolitaine")
     with t2:
         tel_suffix = st.text_input(
             "Numéro (sans répéter +33)",
-            placeholder="6 12 34 56 78",
+            value="6 16 73 10 09",
             max_chars=32,
             help="Saisissez le reste du numéro ; le +33 est déjà pris en compte.",
         )

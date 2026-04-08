@@ -19,6 +19,9 @@ if str(_REPO_ROOT) not in sys.path:
 
 import streamlit as st
 
+from sereno_core.artisan_notify import notify_expert
+from sereno_core.proto_state import ensure_demo_seed, p_get, p_set
+
 from sereno_core.gcp_credentials import (
     credentials_for_gcp_clients,
     credentials_for_sheets,
@@ -248,6 +251,40 @@ with col2:
 btn_gcs = st.button("Tester Google Cloud Storage", use_container_width=True)
 btn_vertex = st.button("Tester Vertex AI (Gemini)", use_container_width=True)
 btn_all = st.button("Tout lancer (Sheets + GCS + Vertex)", use_container_width=True)
+
+st.divider()
+st.subheader("Test notification artisan (Twilio)")
+st.caption(
+    "Envoie un SMS (puis appel, puis push) à l’artisan choisi, selon `notification_priority` et les secrets Twilio."
+)
+
+ensure_demo_seed()
+artisans = list(p_get("artisans", []))
+if artisans:
+    labels = {f"{a.get('nom','?')} ({a.get('id')})": a for a in artisans if a.get("id")}
+    pick = st.selectbox("Artisan destinataire", options=list(labels.keys()), key="test_twilio_expert_pick")
+    test_room_url = st.text_input(
+        "Room URL à envoyer",
+        value="https://meet.jit.si/SerenoTEST#config.prejoinPageEnabled=false",
+        help="Lien qui sera envoyé à l’artisan (SMS).",
+    )
+    if st.button("Envoyer une notification test", type="primary"):
+        ex = labels[pick]
+        # Assurer une session_id fictive pour le texte SMS
+        if not p_get("session_id"):
+            p_set("session_id", "TEST0001")
+        res = notify_expert(
+            secrets=dict(st.secrets),
+            expert=ex,
+            room_url=test_room_url.strip(),
+            session_id=str(p_get("session_id")),
+            urgence_label="Test",
+        )
+        st.write([r.__dict__ for r in res])
+else:
+    st.info("Aucun artisan chargé (onglet Experts) — configurez Sheets puis rechargez.")
+
+st.divider()
 
 run_sheets = btn_sheets or btn_all
 run_gcs = btn_gcs or btn_all

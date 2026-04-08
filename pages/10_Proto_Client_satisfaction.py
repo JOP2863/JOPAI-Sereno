@@ -15,7 +15,7 @@ if str(_REPO) not in sys.path:
 import streamlit as st
 
 from sereno_core.proto_checklists import URGENCE_LABELS
-from sereno_core.proto_state import log_event, p_get, p_set, sync_session_sheet
+from sereno_core.proto_state import enforce_client_journey, log_event, p_get, p_set, sync_session_sheet
 from sereno_core.proto_ui import (
     proto_page_start,
     proto_processing_pause,
@@ -31,8 +31,9 @@ proto_page_start(
 )
 step_indicator(7, 7)
 
+enforce_client_journey(require_step=7)
+
 if not p_get("payment_done"):
-    st.warning("Complétez d’abord l’étape **Paiement simulé**.")
     st.stop()
 
 reassurance(

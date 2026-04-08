@@ -14,7 +14,7 @@ if str(_REPO) not in sys.path:
 import streamlit as st
 
 from sereno_core.proto_checklists import CHECKLISTS, URGENCE_LABELS
-from sereno_core.proto_state import log_event, p_get, p_set, sync_session_sheet
+from sereno_core.proto_state import enforce_client_journey, log_event, p_get, p_set, sync_session_sheet
 from sereno_core.proto_ui import proto_page_start, reassurance, step_indicator
 
 proto_page_start(
@@ -23,9 +23,10 @@ proto_page_start(
 )
 step_indicator(3, 7)
 
+enforce_client_journey(require_step=2)
+
 ut = p_get("urgence_type")
 if not ut:
-    st.warning("Parcours incomplet — retournez à l’accueil.")
     st.stop()
 
 items = CHECKLISTS.get(ut, [])

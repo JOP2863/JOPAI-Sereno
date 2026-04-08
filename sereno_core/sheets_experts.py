@@ -334,12 +334,15 @@ def load_experts_from_sheets(
         nom = nom or eid
         email_raw = _flex_get(nr, "email", "mail", "courriel")
         email = str(email_raw).strip() if email_raw is not None else ""
+        tel_raw = _flex_get(nr, "telephone", "téléphone", "tel", "tél", "phone", "mobile", "portable")
+        telephone = str(tel_raw).strip() if tel_raw is not None else ""
         types = _row_types(nr)
         if eid not in merged:
             merged[eid] = {
                 "id": eid,
                 "nom": nom,
                 "email": email or f"{eid.lower().replace(' ', '_')}@sereno.pilote.local",
+                "telephone": telephone,
                 "types": list(types),
                 "ordre": order,
             }
@@ -351,6 +354,8 @@ def load_experts_from_sheets(
                     m["types"].append(t)
             if email and "@" in email:
                 m["email"] = email
+            if telephone and len(telephone) >= 6:
+                m["telephone"] = telephone
 
     out = list(merged.values())
     out.sort(key=lambda x: int(x.get("ordre", 99)))

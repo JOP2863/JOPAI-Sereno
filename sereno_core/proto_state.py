@@ -86,6 +86,52 @@ def log_event(action: str, **fields: Any) -> None:
     events.append(ev)
     p_set("events", events)
 
+def enforce_client_journey(*, require_step: int) -> None:
+    """
+    Garde-fou « parcours client » : si l’utilisateur arrive sur une page trop avancée,
+    redirige vers la première étape manquante (sans afficher « commencez par… »).
+
+    Steps (7 étapes) :
+    1 urgence choisie + session_id
+    2 infos saisies (tel au minimum)
+    3 SST validée
+    4 expert assigné
+    5 visio en cours (page visio)
+    6 paiement (après visio terminée)
+    7 avis (après paiement)
+    """
+    # Step 1
+    if require_step >= 1:
+        if not p_get("urgence_type") or not p_get("session_id"):
+            st.switch_page("pages/4_Proto_Client_accueil.py")
+            return
+    # Step 2
+    if require_step >= 2:
+        tel = str(p_get("client_tel") or "").strip()
+        if not tel or tel == "+33":
+            st.switch_page("pages/5_Proto_Client_informations.py")
+            return
+    # Step 3
+    if require_step >= 3:
+        if not p_get("sst_validated"):
+            st.switch_page("pages/6_Proto_Client_SST.py")
+            return
+    # Step 4
+    if require_step >= 4:
+        if not p_get("assigned_expert"):
+            st.switch_page("pages/7_Proto_Client_file_visio.py")
+            return
+    # Step 6: visio terminée
+    if require_step >= 6:
+        if not p_get("visio_done"):
+            st.switch_page("pages/8_Proto_Client_visio.py")
+            return
+    # Step 7: paiement terminé
+    if require_step >= 7:
+        if not p_get("payment_done"):
+            st.switch_page("pages/9_Proto_Client_paiement.py")
+            return
+
 
 def _sheet_write_debug() -> bool:
     try:
