@@ -275,11 +275,14 @@ def notify_expert(
     )
 
     # SMS volontairement **court** : comptes Twilio **Trial** refusent souvent les messages multi-segments (erreur 30044).
-    # Détail (motif, demandeur, réassurance) reste dans l’**appel** vocal.
+    # Détail (demandeur, réassurance) reste dans l’**appel** vocal.
+    # Sur **Trial**, Twilio ajoute toujours un suffixe du type « Sent from your Twilio trial account » : non supprimable
+    # tant que le compte n’est pas **actif** ; cette ligne d’accroche est *notre* texte, pas un remplacement du suffixe.
     sid_short = str(session_id or "").strip()[:10]
-    sms_body = f"SERENO visio ref {sid_short}\n{urgence_label}\n{room_url}"
+    intro = f"Urgence JOPAI SÉRÉNO — {urgence_label} pour vous."
+    sms_body = f"{intro}\nVisio ref {sid_short}\n{room_url}"
     if len(sms_body) > 300:
-        sms_body = f"SERENO ref {sid_short}\n{room_url}"
+        sms_body = f"JOPAI SÉRÉNO — {urgence_label}\nref {sid_short}\n{room_url}"
 
     call_say = (
         f"SÉRÉNO. Nouvelle demande {urgence_label}. "
