@@ -15,7 +15,15 @@ if str(_REPO) not in sys.path:
 import streamlit as st
 
 from sereno_core.proto_checklists import URGENCE_LABELS
-from sereno_core.proto_state import enforce_client_journey, log_event, p_get, p_set, sync_session_sheet
+from sereno_core.proto_state import (
+    enforce_client_journey,
+    journey_nps_active,
+    journey_payment_active,
+    log_event,
+    p_get,
+    p_set,
+    sync_session_sheet,
+)
 from sereno_core.proto_ui import (
     proto_page_start,
     proto_processing_pause,
@@ -31,7 +39,10 @@ step_indicator(7, 7)
 
 enforce_client_journey(require_step=7)
 
-if not p_get("payment_done"):
+if not journey_nps_active():
+    st.switch_page("pages/4_Proto_Client_accueil.py")
+
+if journey_payment_active() and not p_get("payment_done"):
     st.stop()
 
 nps = render_nps_buttons()

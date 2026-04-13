@@ -16,6 +16,7 @@ pages/17_Admin_proprietaire_disponibilites.py
 pages/18_Proto_Proprietaire_conformite.py
 pages/19_Projet_reporting_indicateurs.py
 pages/1_Tests_connexions.py
+pages/20_Projet_parametrage_parcours_client.py
 pages/2_Cahier_des_charges.py
 pages/3_Carnet_echange.py
 pages/4_Proto_Client_accueil.py
@@ -43,6 +44,7 @@ sereno_core/proto_ui.py
 sereno_core/reporting_cdc_indicators.py
 sereno_core/sheets_disponibilite_write.py
 sereno_core/sheets_experts.py
+sereno_core/sheets_journey_config.py
 sereno_core/sheets_paiements_write.py
 sereno_core/sheets_schema.py
 sereno_core/sheets_sessions_write.py

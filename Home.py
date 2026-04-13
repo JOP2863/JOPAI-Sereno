@@ -69,7 +69,9 @@ with st.sidebar:
 
 
 def _client_flow_pages(*, accueil_default: bool) -> list[st.Page]:
-    return [
+    from sereno_core.proto_state import journey_nps_active, journey_payment_active, journey_sst_active
+
+    pages: list[st.Page] = [
         st.Page("pages/13_Proto_Guide_parcours.py", title="Guide parcours", icon="🗺️"),
         st.Page(
             "pages/4_Proto_Client_accueil.py",
@@ -79,12 +81,20 @@ def _client_flow_pages(*, accueil_default: bool) -> list[st.Page]:
             default=accueil_default,
         ),
         st.Page("pages/5_Proto_Client_informations.py", title="Informations", icon="📝"),
-        st.Page("pages/6_Proto_Client_SST.py", title="Sécurité (SST)", icon="🛡️"),
-        st.Page("pages/7_Proto_Client_file_visio.py", title="Mise en relation & visio", icon="📞"),
-        st.Page("pages/8_Proto_Client_visio.py", title="Session visio", icon="📹"),
-        st.Page("pages/9_Proto_Client_paiement.py", title="Paiement", icon="💳"),
-        st.Page("pages/10_Proto_Client_satisfaction.py", title="NPS (avis)", icon="📈"),
     ]
+    if journey_sst_active():
+        pages.append(st.Page("pages/6_Proto_Client_SST.py", title="Sécurité (SST)", icon="🛡️"))
+    pages.extend(
+        [
+            st.Page("pages/7_Proto_Client_file_visio.py", title="Mise en relation & visio", icon="📞"),
+            st.Page("pages/8_Proto_Client_visio.py", title="Session visio", icon="📹"),
+        ]
+    )
+    if journey_payment_active():
+        pages.append(st.Page("pages/9_Proto_Client_paiement.py", title="Paiement", icon="💳"))
+    if journey_nps_active():
+        pages.append(st.Page("pages/10_Proto_Client_satisfaction.py", title="NPS (avis)", icon="📈"))
+    return pages
 
 
 _projet = [
@@ -94,9 +104,12 @@ _projet = [
     st.Page("pages/2_Cahier_des_charges.py", title="Cahier des charges", icon="📋"),
     st.Page("pages/3_Carnet_echange.py", title="Carnet d’échange", icon="📒"),
     st.Page("pages/1_Tests_connexions.py", title="Tests connexions", icon="🔌"),
+    st.Page(
+        "pages/20_Projet_parametrage_parcours_client.py",
+        title="Paramétrage parcours client",
+        icon="🧭",
+    ),
 ]
-
-_prototype_client = _client_flow_pages(accueil_default=False)
 
 _prototype_artisan = [
     st.Page("pages/11_Proto_Artisan_dashboard.py", title="Tableau de bord", icon="🛠️"),
@@ -116,13 +129,14 @@ _admin_artisan_seulement = [
     st.Page("pages/16_Admin_artisan_disponibilites.py", title="Dispo. artisan", icon="📆"),
 ]
 
-_prototype_client_public = _client_flow_pages(accueil_default=True)
-
-
 def _navigation_pages() -> dict[str, list[st.Page]]:
+    """
+    Construit le menu à chaque exécution (notamment après changement de parcours client sur la page
+    **Paramétrage** + ``st.rerun()`` : les listes **Prototype · Client** ne sont pas figées en amont).
+    """
     role = pilot_auth.session_role()
     if role in (pilot_auth.ROLE_PUBLIC, "CLIENT_COMPTE", "CLIENT_PUBLIC"):
-        return {"Prototype · Client": _prototype_client_public}
+        return {"Prototype · Client": _client_flow_pages(accueil_default=True)}
     if role == "ARTISAN":
         return {
             "Prototype · Artisan": _prototype_artisan,
@@ -131,7 +145,7 @@ def _navigation_pages() -> dict[str, list[st.Page]]:
     # Propriétaire, compagnon, client inscrit (pilote) : accès complet menu Streamlit.
     return {
         "Projet": _projet,
-        "Prototype · Client": _prototype_client,
+        "Prototype · Client": _client_flow_pages(accueil_default=False),
         "Prototype · Artisan": _prototype_artisan,
         "Prototype · Propriétaire": _prototype_proprietaire,
         "Administration · Pilote": _admin_pilote,

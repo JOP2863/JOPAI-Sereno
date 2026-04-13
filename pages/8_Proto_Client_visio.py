@@ -16,7 +16,14 @@ if str(_REPO) not in sys.path:
 import streamlit as st
 import streamlit.components.v1 as components
 
-from sereno_core.proto_state import enforce_client_journey, log_event, p_get, p_set, sync_session_sheet
+from sereno_core.proto_state import (
+    enforce_client_journey,
+    journey_next_after_visio_done,
+    log_event,
+    p_get,
+    p_set,
+    sync_session_sheet,
+)
 from sereno_core.proto_ui import (
     proto_nav_overlay_once,
     proto_page_start,
@@ -143,5 +150,7 @@ with c2:
             except Exception:
                 pass
 
-            st.session_state["_sereno_overlay_paiement"] = True
-            st.switch_page("pages/9_Proto_Client_paiement.py")
+            _nxt = journey_next_after_visio_done()
+            if _nxt.endswith("Proto_Client_paiement.py"):
+                st.session_state["_sereno_overlay_paiement"] = True
+            st.switch_page(_nxt)

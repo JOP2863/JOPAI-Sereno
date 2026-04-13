@@ -14,6 +14,20 @@ import streamlit as st
 
 _PREFIX = "sereno_proto_"
 
+# Préréglages parcours client (pilote) — conservés au « reset » session (voir `reset_client_journey`).
+JOURNEY_PRESET_STANDARD = "standard"
+JOURNEY_PRESET_SIMPLIFIED = "simplified"
+JOURNEY_PRESET_CUSTOM = "custom"
+
+_JOURNEY_CONFIG_KEYS = frozenset(
+    {
+        "journey_preset",
+        "journey_custom_sst",
+        "journey_custom_payment",
+        "journey_custom_nps",
+    }
+)
+
 
 def _k(key: str) -> str:
     return f"{_PREFIX}{key}"
@@ -86,19 +100,127 @@ def log_event(action: str, **fields: Any) -> None:
     events.append(ev)
     p_set("events", events)
 
+
+def _journey_session_fallback() -> dict[str, Any]:
+    pr = str(p_get("journey_preset") or "").strip().lower()
+    if pr not in (JOURNEY_PRESET_SIMPLIFIED, JOURNEY_PRESET_CUSTOM):
+        pr = JOURNEY_PRESET_STANDARD
+    return {
+        "preset": pr,
+        "custom_sst": bool(p_get("journey_custom_sst", True)),
+        "custom_payment": bool(p_get("journey_custom_payment", True)),
+        "custom_nps": bool(p_get("journey_custom_nps", True)),
+    }
+
+
+def journey_merged_settings() -> dict[str, Any]:
+    """
+    Réglages effectifs du parcours : **Google Sheets / Config** (clés ``SERENO_JOURNEY_*``) si présentes,
+    sinon **session** (repli sans classeur ou avant première écriture).
+    """
+    repo = Path(__file__).resolve().parent.parent
+    try:
+        secrets = dict(st.secrets)
+    except Exception:
+        secrets = {}
+    try:
+        from sereno_core.sheets_journey_config import load_global_journey_dict
+
+        gd = load_global_journey_dict(repo, secrets)
+    except Exception:
+        gd = None
+    if gd is not None:
+        return gd
+    return _journey_session_fallback()
+
+
+def journey_preset() -> str:
+    """`standard` | `simplified` | `custom` (défaut : parcours complet)."""
+    v = str(journey_merged_settings().get("preset") or "").strip().lower()
+    if v in (JOURNEY_PRESET_SIMPLIFIED, JOURNEY_PRESET_CUSTOM):
+        return v
+    return JOURNEY_PRESET_STANDARD
+
+
+def journey_sst_active() -> bool:
+    c = journey_merged_settings()
+    pr = str(c.get("preset") or JOURNEY_PRESET_STANDARD).strip().lower()
+    if pr == JOURNEY_PRESET_STANDARD:
+        return True
+    if pr == JOURNEY_PRESET_SIMPLIFIED:
+        return False
+    return bool(c.get("custom_sst", True))
+
+
+def journey_payment_active() -> bool:
+    c = journey_merged_settings()
+    pr = str(c.get("preset") or JOURNEY_PRESET_STANDARD).strip().lower()
+    if pr == JOURNEY_PRESET_STANDARD:
+        return True
+    if pr == JOURNEY_PRESET_SIMPLIFIED:
+        return False
+    return bool(c.get("custom_payment", True))
+
+
+def journey_nps_active() -> bool:
+    c = journey_merged_settings()
+    pr = str(c.get("preset") or JOURNEY_PRESET_STANDARD).strip().lower()
+    if pr == JOURNEY_PRESET_STANDARD:
+        return True
+    if pr == JOURNEY_PRESET_SIMPLIFIED:
+        return False
+    return bool(c.get("custom_nps", True))
+
+
+def journey_next_after_infos() -> str:
+    return (
+        "pages/6_Proto_Client_SST.py"
+        if journey_sst_active()
+        else "pages/7_Proto_Client_file_visio.py"
+    )
+
+
+def journey_next_after_visio_done() -> str:
+    """Cible après « J’ai terminé la visio » (paiement / NPS / accueil selon config)."""
+    if journey_payment_active():
+        return "pages/9_Proto_Client_paiement.py"
+    p_set("payment_done", True)
+    if journey_nps_active():
+        return "pages/10_Proto_Client_satisfaction.py"
+    log_event("parcours_fin_sans_paiement_nps", session_id=p_get("session_id"))
+    try:
+        sync_session_sheet(
+            {
+                "type_code": p_get("urgence_type"),
+                "statut": "CLOTUREE_PARCOURS_COURT",
+            }
+        )
+    except Exception:
+        pass
+    return "pages/4_Proto_Client_accueil.py"
+
+
+def journey_next_after_payment_success() -> str:
+    if journey_nps_active():
+        return "pages/10_Proto_Client_satisfaction.py"
+    return "pages/4_Proto_Client_accueil.py"
+
+
 def enforce_client_journey(*, require_step: int) -> None:
     """
     Garde-fou « parcours client » : si l’utilisateur arrive sur une page trop avancée,
     redirige vers la première étape manquante (sans afficher « commencez par… »).
 
-    Steps (7 étapes) :
-    1 urgence choisie + session_id
-    2 infos saisies (tel au minimum)
-    3 SST validée
-    4 expert assigné
-    5 visio en cours (page visio)
-    6 paiement (après visio terminée)
-    7 avis (après paiement)
+    Étapes de référence (7) ; **SST**, **paiement** et **NPS** peuvent être désactivés
+    (page **Paramétrage parcours client**, `journey_*` dans ``proto_state``) :
+
+    1. urgence choisie + ``session_id``
+    2. infos saisies (téléphone au minimum)
+    3. SST validée (si l’étape est active)
+    4. expert assigné
+    5. visio (page session)
+    6. paiement après visio (si l’étape est active)
+    7. avis NPS (si l’étape est active ; sinon pas d’exigence de paiement simulé si paiement inactif)
     """
     # Step 1
     if require_step >= 1:
@@ -111,8 +233,8 @@ def enforce_client_journey(*, require_step: int) -> None:
         if not tel or tel == "+33":
             st.switch_page("pages/5_Proto_Client_informations.py")
             return
-    # Step 3
-    if require_step >= 3:
+    # Step 3 (SST) — ignorée si l’étape est désactivée dans les paramètres parcours
+    if require_step >= 3 and journey_sst_active():
         if not p_get("sst_validated"):
             st.switch_page("pages/6_Proto_Client_SST.py")
             return
@@ -126,9 +248,9 @@ def enforce_client_journey(*, require_step: int) -> None:
         if not p_get("visio_done"):
             st.switch_page("pages/8_Proto_Client_visio.py")
             return
-    # Step 7: paiement terminé
+    # Step 7 (page NPS) : exiger le paiement simulé seulement si l’étape paiement est active
     if require_step >= 7:
-        if not p_get("payment_done"):
+        if journey_payment_active() and not p_get("payment_done"):
             st.switch_page("pages/9_Proto_Client_paiement.py")
             return
 
@@ -197,6 +319,7 @@ def append_paiement_sheet_row(
 def reset_client_journey() -> None:
     """Remet le parcours client à zéro (garde les événements ; recharge les experts depuis Sheets)."""
     keep = {_k("events")}
+    keep.update(_k(k) for k in _JOURNEY_CONFIG_KEYS)
     for key in list(st.session_state.keys()):
         if isinstance(key, str) and key.startswith(_PREFIX) and key not in keep:
             del st.session_state[key]

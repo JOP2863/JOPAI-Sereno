@@ -11,7 +11,7 @@ Source de vérité pour le script scripts/init_google_sheet.py et pour le CDC §
 | **Paiements** | Écriture append à chaque validation paiement (`sheets_paiements_write`, `append_paiement_sheet_row`). |
 | **Disponibilite_Mois** | Écriture + lecture pages admin 16/17 (`sheets_disponibilite_write`). |
 | **Connexions_Test** | Écriture / lecture page Tests connexions. |
-| **Config** | Non lu par l’app (forfait etc. encore en code Python). |
+| **Config** | Lecture / écriture des clés **parcours client** ``SERENO_JOURNEY_*`` (`sheets_journey_config`) ; autres clés (forfait, etc.) encore en code ou à brancher. |
 | **Types_Urgence** | Non lu (libellés / ordre dans `proto_checklists`). |
 | **Checklist_SST** | Non lu (questions dans `proto_checklists`). |
 | **Regles_Moteur** | Non lu (règles encore en code). |
@@ -60,6 +60,10 @@ SHEET_TABS: tuple[SheetTab, ...] = (
             ),
             ("VERSION_REGLES", "1", "Incrementer si changement majeur checklist", "", "", ""),
             ("PILOTE_PAIEMENT_MODE", "FAKE", "Simulation sans PSP", "", "", ""),
+            ("SERENO_JOURNEY_PRESET", "standard", "standard | simplified | custom", "", "", ""),
+            ("SERENO_JOURNEY_CUSTOM_SST", "true", "Si custom : SST active (true/false)", "", "", ""),
+            ("SERENO_JOURNEY_CUSTOM_PAYMENT", "true", "Si custom : paiement simulé actif", "", "", ""),
+            ("SERENO_JOURNEY_CUSTOM_NPS", "true", "Si custom : NPS actif", "", "", ""),
         ),
     ),
     SheetTab(

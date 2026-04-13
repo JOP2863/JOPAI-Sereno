@@ -20,6 +20,10 @@ from sereno_core.sheets_experts import resolve_gsheet_id
 
 ROLE_PUBLIC = "PUBLIC"
 
+# Valeurs par défaut du formulaire « Se connecter » (pilote — pas une sécurité production).
+_DEFAULT_PILOT_LOGIN_EMAIL = "jop28@hotmail.com"
+_DEFAULT_PILOT_LOGIN_CODE = "JOP28"
+
 
 def _norm_header_key(key: str) -> str:
     n = unicodedata.normalize("NFKD", str(key).strip().lower())
@@ -166,6 +170,8 @@ def logout() -> None:
         "sereno_pilot_email",
         "sereno_pilot_nom",
         "sereno_users_sheet_cache",
+        "sereno_pilot_login_email",
+        "sereno_pilot_login_code",
     ):
         st.session_state.pop(k, None)
     st.session_state["sereno_pilot_role"] = ROLE_PUBLIC
@@ -201,6 +207,10 @@ def render_auth_top_bar(repo_root: Path) -> None:
 
 
 def _login_form(repo_root: Path) -> None:
+    if "sereno_pilot_login_email" not in st.session_state:
+        st.session_state["sereno_pilot_login_email"] = _DEFAULT_PILOT_LOGIN_EMAIL
+    if "sereno_pilot_login_code" not in st.session_state:
+        st.session_state["sereno_pilot_login_code"] = _DEFAULT_PILOT_LOGIN_CODE
     st.caption(
         "Pilote : **e-mail** + éventuellement **code pilote** (une même adresse peut avoir plusieurs "
         "lignes : propriétaire, compagnon par périmètre, etc.)."

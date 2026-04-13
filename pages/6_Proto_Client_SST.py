@@ -14,7 +14,14 @@ if str(_REPO) not in sys.path:
 import streamlit as st
 
 from sereno_core.proto_checklists import CHECKLISTS, URGENCE_LABELS
-from sereno_core.proto_state import enforce_client_journey, log_event, p_get, p_set, sync_session_sheet
+from sereno_core.proto_state import (
+    enforce_client_journey,
+    journey_sst_active,
+    log_event,
+    p_get,
+    p_set,
+    sync_session_sheet,
+)
 from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
 
 proto_page_start(
@@ -24,6 +31,9 @@ proto_page_start(
 step_indicator(3, 7)
 
 enforce_client_journey(require_step=2)
+
+if not journey_sst_active():
+    st.switch_page("pages/7_Proto_Client_file_visio.py")
 
 ut = p_get("urgence_type")
 if not ut:

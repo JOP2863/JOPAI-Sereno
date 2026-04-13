@@ -23,7 +23,15 @@ _URG_BAND = {
     "CHAUFF": ("#00695c", "#e0f2f1", "#004d40"),
     "SERR": ("#455a64", "#eceff1", "#37474f"),
 }
-from sereno_core.proto_state import enforce_client_journey, log_event, p_get, p_set, sync_session_sheet
+from sereno_core.proto_state import (
+    enforce_client_journey,
+    journey_next_after_infos,
+    journey_sst_active,
+    log_event,
+    p_get,
+    p_set,
+    sync_session_sheet,
+)
 from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
 
 proto_page_start(
@@ -81,7 +89,10 @@ with st.form("infos_client"):
         value=True,
         key="confirm_prudence",
     )
-    submitted = st.form_submit_button("Continuer vers la sécurité", type="primary")
+    submitted = st.form_submit_button(
+        "Continuer vers la sécurité" if journey_sst_active() else "Continuer",
+        type="primary",
+    )
 
 if submitted:
     suffix = (tel_suffix or "").strip().replace(" ", "")
@@ -109,7 +120,7 @@ if submitted:
                 "statut": "INFOS_SAISIES",
             }
         )
-        st.switch_page("pages/6_Proto_Client_SST.py")
+        st.switch_page(journey_next_after_infos())
 
 if st.button("← Retour au choix du type"):
     st.switch_page("pages/4_Proto_Client_accueil.py")

@@ -18,6 +18,9 @@ from sereno_core.proto_helpers import STRIPE_TEST_CARD_SUCCESS, validate_card_fi
 from sereno_core.proto_state import (
     append_paiement_sheet_row,
     enforce_client_journey,
+    journey_next_after_payment_success,
+    journey_nps_active,
+    journey_payment_active,
     log_event,
     p_get,
     p_set,
@@ -41,6 +44,12 @@ proto_nav_overlay_once("_sereno_overlay_paiement")
 step_indicator(6, 7)
 
 enforce_client_journey(require_step=6)
+
+if not journey_payment_active():
+    p_set("payment_done", True)
+    st.switch_page(
+        "pages/10_Proto_Client_satisfaction.py" if journey_nps_active() else "pages/4_Proto_Client_accueil.py"
+    )
 
 if not p_get("visio_done"):
     st.stop()
@@ -111,7 +120,7 @@ if ok:
                 notes="Parcours prototype Streamlit",
             )
             st.success("Paiement enregistré pour la session pilote. Merci !")
-            st.switch_page("pages/10_Proto_Client_satisfaction.py")
+            st.switch_page(journey_next_after_payment_success())
 
 if st.button("← Retour à la visio"):
     with proto_processing_pause():

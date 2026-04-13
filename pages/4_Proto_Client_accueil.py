@@ -44,7 +44,8 @@ border-radius:10px;box-shadow:0 2px 10px rgba(0,51,102,0.08);">
 step_indicator(1, 7)
 reassurance(
     "Vous êtes en sécurité ici : pas d’engagement immédiat, aucun paiement réel sur cette démonstration. "
-    "Réponse humaine d’un expert du bâtiment."
+    "Réponse humaine d’un expert du bâtiment.",
+    compact=True,
 )
 
 st.markdown(
@@ -60,7 +61,7 @@ div.sereno-urgence-buttons button[data-testid="baseButton-primary"] {
     unsafe_allow_html=True,
 )
 
-st.divider()
+st.markdown('<div class="sereno-accueil-urgence-choix">', unsafe_allow_html=True)
 st.markdown("### Choisissez votre situation")
 
 _fcol, _ = st.columns([0.68, 0.32])
@@ -76,3 +77,4 @@ with _fcol:
                 sync_session_sheet({"type_code": code, "statut": "URGENCE_CHOISIE"})
                 st.switch_page("pages/5_Proto_Client_informations.py")
     st.markdown("</div>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)

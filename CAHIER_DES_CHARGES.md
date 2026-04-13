@@ -1,7 +1,7 @@
 # Cahier des charges — SÉRÉNO (JOPAI BTP)
 
 **Document :** spécification produit et technique — prototype / pilote.  
-**Version :** 1.23 (SMS Twilio **court** + doc **30044** Trial / géo ; page **Reporting** : `line_chart` / `area_chart` / `scatter_chart` / `progress` ; filigrane **pastel** ; accueil client : **nouvelle session** + overlay sans nom d’expert).  
+**Version :** 1.25 (parcours client : persistance **Config** Sheets partagée, menu latéral **masque** les pages inactives ; connexion pilote : e-mail / code **préremplis** par défaut).  
 **Classification des sections :** Partie 1 — contexte & business · Partie 2 — fonctionnel · Partie 3 — technique · **Partie 4 — avancements** (idée → pilote → produit).
 
 **Comment lire ce cahier :**
@@ -261,6 +261,8 @@ Un **seul tap** lance le **type d’urgence** (libellés courts, pictogrammes, c
 5. **Clôture** — Récap **forfait** (ex. 50 €), conditions courtes ; **flux paiement simulé** (§ 2.9).
 6. **Après session** — Envoi ou téléchargement d’un **compte rendu** (template simple) ; option **« besoin d’un passage sur place »** (renvoi vers partenaire / prise de contact — au minimum texte + coordonnées en pilote).
 
+**Pilote Streamlit (réseau / propriétaire) :** une page **Paramétrage parcours client** (section **Projet**) permet de choisir un parcours **standard** (toutes les étapes ci-dessus comme aujourd’hui), **simplifié** (sans l’étape sécurité **SST**, sans **paiement** simulé, sans questionnaire **NPS** — acronyme anglais *Net Promoter Score*, la note de recommandation 0 à 10), ou **personnalisé** (activer ou non chacune de ces trois étapes). Les choix sont **écrits automatiquement** dans l’onglet **Config** du classeur Google (clés dont le préfixe est ``SERENO_JOURNEY_``) : **tous les visiteurs** de l’application voient le même parcours ; le menu latéral **ne propose plus** les entrées des étapes désactivées. Si le classeur n’est pas joignable, un **repli** garde les derniers réglages **dans la session** du navigateur.
+
 ## 2.4 Parcours expert (dashboard)
 
 - Voir la **liste des demandes** ouvertes.
@@ -457,12 +459,12 @@ Exemple :
 
 | Élément | Rôle |
 |---------|------|
-| `sereno_core/` | Paquet Python : `sheets_schema`, **`gcp_credentials`**, **`gspread_helpers`** (quota **429** / liste d’onglets), **`sheets_experts`**, **`pilot_auth`** (session + lecture **Utilisateurs_Acces**), **`md_chapters`**, **`streamlit_markdown_book`**, **`cdc_pdf_export`**, **`projet_navigation_intro`**, **`reporting_cdc_indicators`**, **`pappers_client`**, etc. |
+| `sereno_core/` | Paquet Python : `sheets_schema`, **`gcp_credentials`**, **`gspread_helpers`** (quota **429** / liste d’onglets), **`sheets_experts`**, **`pilot_auth`** (session + lecture **Utilisateurs_Acces**), **`proto_state`** (dont **`journey_*`** : préréglages parcours client pilote), **`md_chapters`**, **`streamlit_markdown_book`**, **`cdc_pdf_export`**, **`projet_navigation_intro`**, **`reporting_cdc_indicators`**, **`pappers_client`**, etc. |
 | `scripts/init_google_sheet.py` | Crée les onglets manquants, écrit la **ligne 1** (en-têtes) et optionnellement les **lignes de graine** (voir § 3.9). |
 | `scripts/migrate_google_sheet_schema.py` | **Migration additive** du classeur : ajoute colonnes manquantes + onglet **`Utilisateurs_Acces`** selon `sheets_schema` (sans supprimer de colonnes). |
 | `scripts/sql/create_papers_cache_table.sql` | Script PostgreSQL — table **`papers`** (cache JSON API Pappers). |
 | `Home.py` | Entrée Streamlit. |
-| `pages/` | Tests, CDC, carnet, métriques (`14`), reporting (`19`), proto client / artisan / propriétaire (`4`–`13`, `18`), admin dispos (`16`–`17`), etc. |
+| `pages/` | Tests, CDC, carnet, métriques (`14`), reporting (`19`), paramétrage parcours client (`20`), proto client / artisan / propriétaire (`4`–`13`, `18`), admin dispos (`16`–`17`), etc. |
 | `docs/CAHIER_ECHANGES.md` | **Carnet d’échange** (fil décisions / discussions) — page Streamlit homonyme. |
 
 ### 3.3.2 Interface Streamlit — navigation
@@ -473,8 +475,8 @@ L’accès aux pages du dossier `pages/` exige **`showSidebarNavigation = true`*
 
 | Section | Contenu principal (fichiers `pages/`) |
 |---------|--------------------------------------|
-| **Projet** | Accueil, **Métriques** (lignes CDC / code), **Reporting** (canevas indicateurs § 1.7), Cahier des charges, Carnet d’échange, Tests connexions. |
-| **Prototype · Client** | Guide parcours, flux urgence → … → satisfaction. |
+| **Projet** | Accueil, **Métriques** (lignes CDC / code), **Reporting** (canevas indicateurs § 1.7), Cahier des charges, Carnet d’échange, Tests connexions, **Paramétrage parcours client** (`20`). |
+| **Prototype · Client** | Guide parcours, flux urgence → … → satisfaction (pages **SST** / **Paiement** / **NPS** masquées si inactives selon **Config**). |
 | **Prototype · Artisan** | Tableau de bord expert. |
 | **Prototype · Propriétaire** | Activité réseau, **Conformité (SIREN / Pappers)**. |
 | **Administration · Pilote** | **Dispo. artisan**, **Dispo. réseau (proprio)** — saisie `Disponibilite_Mois` (§ 1.7.1). |
@@ -871,6 +873,8 @@ Pour le **détail ligne à ligne**, le **mini-glossaire** et les **questions / r
 
 | Version | Date | Auteur | Résumé |
 |---------|------|--------|--------|
+| 1.25 | 2026-04-13 | JOPAI + assistant | Parcours : persistance **Config** (`sheets_journey_config`, préfixe ``SERENO_JOURNEY_``), menu client **sans** les pages désactivées ; formulaire **Se connecter** : e-mail et code pilote **préremplis** (démo) + reset à la déconnexion. |
+| 1.24 | 2026-04-13 | JOPAI + assistant | Page **Paramétrage parcours client** (menu Projet) : parcours **standard**, **simplifié** ou **personnalisé** (étapes optionnelles **SST**, **paiement**, **NPS**) ; clés `journey_*` dans **`proto_state`** conservées au reset parcours ; enchaînements mis à jour sur les pages prototype client. |
 | 1.23 | 2026-04-08 | JOPAI + assistant | **Twilio 30044** : piste **Trial / longueur SMS** + SMS **court** (`artisan_notify`) ; **Reporting** : graphiques variés (`reporting_cdc_indicators`) ; filigrane **pastel** ; accueil urgence : **`new_session_id`** systématique + overlay sans nom expert (`busy_overlay_use_assigned_expert`). |
 | 1.22 | 2026-04-08 | JOPAI + assistant | **`jopai_brand_html`** : titres **H1** + prototype + footer / filigrane / sidebar ; **Vertex 404** : hints + **`vertex_media_summary`** ; **`streamlit-secrets.EXAMPLE.toml`** : `vertex_model` versionné par défaut ; § **3.6.6** ligne 404. |
 | 1.21 | 2026-04-08 | JOPAI + assistant | NPS : **JOP** + *AI* + © turquoise + **SÉRÉNO** pétrole ; `proto_processing_pause` sur urgence, SST (ligne + auto), visio ouvrir/fin, paiement ; accueil projet sans bloc lien/QR verbeux ; Twilio Trial = numéro Sheets **identique** aux **Verified** ; § 1.3.1 + dual-UX (pas de pages app séparées). |

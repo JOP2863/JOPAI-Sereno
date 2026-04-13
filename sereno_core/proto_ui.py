@@ -43,9 +43,11 @@ def proto_page_start(
             st.caption(subtitle)
 
 
-def reassurance(msg: str) -> None:
+def reassurance(msg: str, *, compact: bool = False) -> None:
+    """Bloc réassurance ; ``compact=True`` réduit l’espace vertical (ex. accueil urgence avant les boutons)."""
+    extra = " sereno-reassure--tight" if compact else ""
     st.markdown(
-        f"<div class='sereno-reassure'>{msg}</div>",
+        f"<div class='sereno-reassure{extra}'>{msg}</div>",
         unsafe_allow_html=True,
     )
 

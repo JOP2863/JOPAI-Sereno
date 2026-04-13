@@ -210,6 +210,14 @@ def inject_sereno_prototype_css(*, busy_overlay_use_assigned_expert: bool = True
             font-size: 1.05rem;
             line-height: 1.5;
         }}
+        .sereno-reassure.sereno-reassure--tight {{
+            margin: 6px 0 8px 0;
+            padding: 14px 18px;
+        }}
+        .sereno-accueil-urgence-choix h3 {{
+            margin-top: 0.35rem;
+            margin-bottom: 0.5rem;
+        }}
         .sereno-card {{
             background: {dt.COLOR_SURFACE};
             border: 1px solid {dt.COLOR_BORDER};

@@ -18,7 +18,14 @@ import streamlit as st
 from sereno_core.proto_checklists import URGENCE_LABELS
 from sereno_core.proto_helpers import pick_expert_for_urgence
 from sereno_core.artisan_notify import notify_expert
-from sereno_core.proto_state import enforce_client_journey, log_event, p_get, p_set, sync_session_sheet
+from sereno_core.proto_state import (
+    enforce_client_journey,
+    journey_sst_active,
+    log_event,
+    p_get,
+    p_set,
+    sync_session_sheet,
+)
 from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
 from sereno_core.sheets_experts import canonicalize_type_list
 from sereno_core.visio_recording import build_visio_object_prefix, daily_api_key_from_secrets, daily_start_recording
@@ -32,7 +39,9 @@ step_indicator(4, 7)
 enforce_client_journey(require_step=3)
 
 ut = p_get("urgence_type")
-if not ut or not p_get("sst_validated"):
+if not ut:
+    st.stop()
+if journey_sst_active() and not p_get("sst_validated"):
     st.stop()
 
 reassurance(
@@ -201,4 +210,6 @@ if st.button("Ouvrir la salle de visio", type="primary"):
         st.switch_page("pages/8_Proto_Client_visio.py")
 
 if st.button("← Retour"):
-    st.switch_page("pages/6_Proto_Client_SST.py")
+    st.switch_page(
+        "pages/6_Proto_Client_SST.py" if journey_sst_active() else "pages/5_Proto_Client_informations.py"
+    )
