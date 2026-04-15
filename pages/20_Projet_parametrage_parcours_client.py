@@ -60,7 +60,6 @@ st.markdown(
     page_title_h1_html(
         "Paramétrage expérience client",
         brand_suffix=show_brand_suffix_in_titles(),
-        show_sereno_suffix=not show_brand_suffix_in_titles(),
     ),
     unsafe_allow_html=True,
 )
