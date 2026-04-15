@@ -77,6 +77,7 @@ st.markdown(
 .sereno-tbl-fit-hdr th:nth-child(2) { text-align:left; }
 .sereno-tbl-fit-hdr th:nth-child(3) { text-align:left; }
 .sereno-tbl-fit-hdr th:nth-child(4) { text-align:right; }
+section[data-testid="stMain"] .stButton > button { white-space: nowrap !important; }
 </style>
 """,
     unsafe_allow_html=True,

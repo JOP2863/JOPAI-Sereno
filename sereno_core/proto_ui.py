@@ -92,7 +92,7 @@ def step_indicator(current: int, total: int = 6) -> None:
 def proto_processing_pause():
     """
     Affiche le spinner Streamlit → overlay pastel (carte : **nom de l’expert** assigné si connu,
-    sinon « Votre artisan travaille pour vous… » — voir `inject_sereno_prototype_css`).
+    sinon « Votre artisan SÉRÉNO travaille pour vous… » — voir `inject_sereno_prototype_css`).
     À utiliser autour des traitements après soumission.
     """
     with st.spinner(" "):

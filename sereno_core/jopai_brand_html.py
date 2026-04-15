@@ -107,7 +107,7 @@ def filigrane_second_line_html() -> str:
     # Pastels dérivés de la charte (lisibles sur fond très léger du filigrane).
     t = "#7dd3c0"
     n = "#94a3b8"
-    demo = "#a8b8c8"
+    demo = "rgba(168, 184, 200, 0.72)"
     jop = f'<span style="font-weight:800;color:{t};">JOP</span>'
     ai = f'<span style="font-style:italic;color:{t};">AI</span>'
     sup = f'<sup style="color:{t};font-size:0.68em;line-height:0;vertical-align:super;">©</sup>'

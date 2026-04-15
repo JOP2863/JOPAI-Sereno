@@ -134,6 +134,8 @@ def _render_expert_picker(*, elig: list[dict], default_id: str) -> dict:
 .sereno-tbl-fit-hdr th:nth-child(1) { text-align:center; }
 .sereno-tbl-fit-hdr th:nth-child(2) { text-align:left; }
 .sereno-tbl-fit-hdr th:nth-child(3) { text-align:right; }
+/* Boutons d’action courts : pas de césure au milieu du mot (ex. « Éditer »). */
+section[data-testid="stMain"] .stButton > button { white-space: nowrap !important; }
 </style>
 """,
         unsafe_allow_html=True,
@@ -145,6 +147,15 @@ def _render_expert_picker(*, elig: list[dict], default_id: str) -> dict:
         sel = default_id
 
     sec = dict(st.secrets)
+    eids_sorted = sorted({str(e.get("id") or "").strip() for e in elig if str(e.get("id") or "").strip()})
+    _thumb_ck = "_sereno_pick_thumbs_" + "|".join(eids_sorted)
+    if _thumb_ck not in st.session_state:
+        _buf: dict[str, tuple | None] = {}
+        for _eid in eids_sorted:
+            _buf[_eid] = download_artisan_photo_bytes(_REPO, sec, expert_id=_eid)
+        st.session_state[_thumb_ck] = _buf
+    thumbs: dict[str, tuple | None] = st.session_state[_thumb_ck]
+
     # Colonne gauche = zone « tableau » ; droite laisse le vide (alignement gauche visuel).
     _tbl_col, _rest = st.columns([0.46, 0.54])
     with _tbl_col:
@@ -164,7 +175,7 @@ def _render_expert_picker(*, elig: list[dict], default_id: str) -> dict:
             pr = str(e.get("ordre") or "—")
             cimg, ctext, cbtn = st.columns([_W_PH, _W_TX, _W_BT], vertical_alignment="center")
             with cimg:
-                tup = download_artisan_photo_bytes(_REPO, sec, expert_id=eid)
+                tup = thumbs.get(eid)
                 if tup:
                     st.image(tup[0], width=44)
                 else:

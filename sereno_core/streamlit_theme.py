@@ -53,10 +53,10 @@ def _busy_overlay_card_inner_html(*, use_assigned_expert: bool = True) -> str:
                 )
             if prenom:
                 return img + f"<strong>{escape(prenom)}</strong> travaille pour vous…"
-            return img + escape("Votre artisan travaille pour vous…")
+            return img + escape("Votre artisan SÉRÉNO travaille pour vous…")
         except Exception:
             pass
-    return escape("Votre artisan travaille pour vous…")
+    return escape("Votre artisan SÉRÉNO travaille pour vous…")
 
 _LOGO_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 
@@ -692,11 +692,11 @@ def apply_global_styles() -> None:
             transform-origin: center center;
             text-align: center;
             font-family: {dt.FONT_UI};
-            font-weight: 700;
-            font-size: clamp(17px, 3.2vw, 30px);
+            font-weight: 560;
+            font-size: clamp(16px, 2.9vw, 27px);
             letter-spacing: 0.06em;
             line-height: 1.45;
-            color: rgba(0, 51, 102, 0.11);
+            color: rgba(0, 51, 102, 0.088);
             text-transform: uppercase;
             user-select: none;
             white-space: normal;

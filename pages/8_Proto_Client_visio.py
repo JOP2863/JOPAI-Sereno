@@ -55,6 +55,7 @@ if not p_get("assigned_expert"):
     st.stop()
 
 ex = p_get("assigned_expert")
+_visio_call = str(ex.get("prenom") or "").strip() or str(ex.get("nom") or "l’expert").strip()
 _sid = str(p_get("session_id") or "DEMO")
 _room = re.sub(r"[^a-zA-Z0-9]", "", f"Sereno{_sid}")[:48] or "SerenoDemo"
 jitsi_url = f"https://meet.jit.si/{_room}#config.prejoinPageEnabled=false"
@@ -66,7 +67,7 @@ _integrated = (
 )
 
 reassurance(
-    f"Vous êtes en ligne avec **{ex.get('nom', 'l’expert')}**. "
+    f"Vous êtes en ligne avec **{_visio_call}**. "
     "Gardez le téléphone à portée de main au cas où la connexion saute."
 )
 
@@ -77,7 +78,7 @@ if _integrated:
             "prévoir en production des **jetons** à durée courte générés côté serveur."
         )
     st.link_button(
-        f"Démarrer la visio avec {ex.get('nom', 'l’expert')}",
+        f"Démarrer la visio avec {_visio_call}",
         _integrated,
         type="primary",
     )
@@ -100,7 +101,7 @@ else:
             st.link_button("Lien cible intégration (exemple)", spec_url, type="secondary")
     else:
         st.link_button(
-            f"Démarrer la visio avec {ex.get('nom', 'l’expert')}",
+            f"Démarrer la visio avec {_visio_call}",
             jitsi_url,
             type="primary",
         )
