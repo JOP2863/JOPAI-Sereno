@@ -168,6 +168,21 @@ def _row_expert_id(norm_row: Mapping[str, Any]) -> str:
     return str(v).strip() if v is not None else ""
 
 
+def _tous_codes_expansion() -> list[str]:
+    """Codes couverts par **TOUS** : préfère l’onglet **Types_Urgence** (actifs) si déjà chargé en session."""
+    try:
+        import streamlit as st
+
+        from sereno_core.proto_state import p_get
+
+        ac = p_get("active_urgence_codes")
+        if isinstance(ac, frozenset) and len(ac) > 0:
+            return sorted(ac)
+    except Exception:
+        pass
+    return sorted(_VALID_CODES)
+
+
 def canonicalize_type_list(raw: list[Any] | None) -> list[str]:
     """Normalise une liste de types (codes ou libellés) vers EAU, ELEC, …"""
     if not raw:
@@ -176,12 +191,40 @@ def canonicalize_type_list(raw: list[Any] | None) -> list[str]:
     for x in raw:
         code = _normalize_type_token(str(x))
         if code == "__ALL__":
-            for c in sorted(_VALID_CODES):
+            for c in _tous_codes_expansion():
                 if c not in out:
                     out.append(c)
         elif code and code not in out:
             out.append(code)
     return out
+
+
+def coerce_expert_types(raw: Any) -> list[str]:
+    """
+    Prépare les types pour le filtre par urgence (évite ``list("EAU")`` → caractères si Sheets
+    ou une couche intermédiaire a fourni une **chaîne** au lieu d’une liste).
+    """
+    if raw is None:
+        return []
+    if isinstance(raw, str):
+        return canonicalize_type_list(_split_types_cell(raw))
+    if isinstance(raw, (list, tuple)):
+        return canonicalize_type_list([str(x) for x in raw])
+    return canonicalize_type_list([str(raw)])
+
+
+def _photo_cell_http_url(norm_row: Mapping[str, Any]) -> str:
+    """URL absolue présente dans la colonne **photo** (Sheets), si renseignée."""
+    cell = _flex_get(norm_row, "photo", "photo_url", "url_photo", "photourl", "avatar")
+    if cell is None:
+        return ""
+    s = str(cell).strip()
+    if not s:
+        return ""
+    low = s.lower()
+    if low.startswith("http://") or low.startswith("https://"):
+        return s
+    return ""
 
 
 def resolve_gsheet_id(repo_root: Path, secrets: Mapping[str, Any] | Any) -> str:
@@ -242,7 +285,7 @@ def _expert_rows_from_sheet(ws: Any) -> list[dict[str, Any]]:
         cells = vals[ri]
         row: dict[str, Any] = {}
         for ci, h_raw in enumerate(headers_raw):
-            hs = str(h_raw).strip()
+            hs = str(h_raw).strip().lstrip("\ufeff")
             if not hs:
                 continue
             hk = _norm_header_key(hs)
@@ -290,10 +333,16 @@ def load_experts_from_sheets(
     secrets: Mapping[str, Any],
     *,
     gsheet_id: str | None = None,
+    eager_gcs_photo: bool = True,
 ) -> list[dict[str, Any]] | None:
     """
     Retourne une liste d’experts au format prototype : id, nom, email, types, ordre.
     `None` si chargement impossible (pas d’ID classeur, erreur API, onglet vide).
+
+    ``eager_gcs_photo`` : si ``True`` (défaut), remplit ``photo_url`` via GCS + data-URL
+    (lourd, une requête par expert). Si ``False``, seule l’**URL publique** conventionnelle
+    est posée (léger) — utile pour une **liste admin** ; les vignettes ne s’affichent que si
+    les objets du bucket sont lisibles publiquement.
     """
     try:
         import gspread
@@ -340,8 +389,16 @@ def load_experts_from_sheets(
         tel_raw = _flex_get(nr, "telephone", "téléphone", "tel", "tél", "phone", "mobile", "portable")
         telephone = str(tel_raw).strip() if tel_raw is not None else ""
         types = _row_types(nr)
-        # Photo : privilégier une data-URL (accès via compte de service) ; repli sur URL publique si bucket public.
-        photo_url = expert_photo_data_url(repo_root, secrets, expert_id=eid) or expert_photo_public_url(eid, secrets)
+        cell_http = _photo_cell_http_url(nr)
+        if eager_gcs_photo:
+            photo_url = (
+                expert_photo_data_url(repo_root, secrets, expert_id=eid)
+                or cell_http
+                or expert_photo_public_url(eid, secrets)
+            )
+        else:
+            # Liste admin / perf : pas de GCS ; URL saisie dans Sheets ou URL publique conventionnelle.
+            photo_url = cell_http or expert_photo_public_url(eid, secrets)
         if eid not in merged:
             merged[eid] = {
                 "id": eid,
@@ -371,9 +428,15 @@ def load_experts_from_sheets(
             pn = str(m.get("prenom") or "").strip()
             nf = str(m.get("nom") or "").strip()
             m["nom_affichage"] = f"{pn} {nf}".strip() if pn else nf
-            m["photo_url"] = expert_photo_data_url(repo_root, secrets, expert_id=eid) or expert_photo_public_url(
-                eid, secrets
-            )
+            ch2 = _photo_cell_http_url(nr)
+            if eager_gcs_photo:
+                m["photo_url"] = (
+                    expert_photo_data_url(repo_root, secrets, expert_id=eid)
+                    or ch2
+                    or expert_photo_public_url(eid, secrets)
+                )
+            else:
+                m["photo_url"] = ch2 or expert_photo_public_url(eid, secrets)
 
     out = list(merged.values())
     out.sort(key=lambda x: int(x.get("ordre", 99)))
@@ -408,8 +471,12 @@ def disponibilite_expert_options(
     return options, mapping
 
 
-def load_experts_from_streamlit_secrets(repo_root: Path) -> list[dict[str, Any]] | None:
+def load_experts_from_streamlit_secrets(
+    repo_root: Path,
+    *,
+    eager_gcs_photo: bool = True,
+) -> list[dict[str, Any]] | None:
     try:
-        return load_experts_from_sheets(repo_root, dict(st.secrets))
+        return load_experts_from_sheets(repo_root, dict(st.secrets), eager_gcs_photo=eager_gcs_photo)
     except Exception:
         return None

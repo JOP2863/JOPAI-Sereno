@@ -13,8 +13,6 @@ if str(_REPO) not in sys.path:
 
 import streamlit as st
 
-from sereno_core.proto_checklists import URGENCE_LABELS
-
 # Bandeau d’accroche : couleurs alignées sur les boutons d’accueil (eau = bleu, élec = orange, etc.)
 _URG_BAND = {
     "EAU": ("#1565c0", "#e3f2fd", "#0d47a1"),
@@ -31,6 +29,7 @@ from sereno_core.proto_state import (
     p_get,
     p_set,
     sync_session_sheet,
+    urgence_display_label,
 )
 from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
 from sereno_core.ui_labels import ui_label_on
@@ -49,7 +48,7 @@ if not ut:
 
 if ui_label_on("infos_urgence_reassurance"):
     reassurance(
-        f"Urgence sélectionnée : **{URGENCE_LABELS.get(ut, ut)}**. "
+        f"Urgence sélectionnée : **{urgence_display_label(ut)}**. "
         "Vous pourrez préciser le détail avec l’expert en visio."
     )
 
@@ -57,7 +56,7 @@ _accent, _bg, _text = _URG_BAND.get(ut, ("#003366", "#f4f7f9", "#003366"))
 if ui_label_on("infos_consigne_band"):
     st.markdown(
         f"<div class='sereno-infos-panne-band' style='border-left-color:{_accent};background:{_bg};color:{_text};'>"
-        f"<strong>Consignes pour votre situation ({URGENCE_LABELS.get(ut, ut)})</strong> — "
+        f"<strong>Consignes pour votre situation ({urgence_display_label(ut)})</strong> — "
         "restez prudent·e : les prochaines étapes rappellent la sécurité avant d’ouvrir la visio.</div>",
         unsafe_allow_html=True,
     )
@@ -110,7 +109,7 @@ if submitted:
             "infos_client",
             session_id=p_get("session_id"),
             urgence=ut,
-            type_intervention=URGENCE_LABELS.get(ut, ut),
+            type_intervention=urgence_display_label(ut),
             prenom=p_get("client_prenom"),
         )
         em = str(p_get("client_email") or "").strip()

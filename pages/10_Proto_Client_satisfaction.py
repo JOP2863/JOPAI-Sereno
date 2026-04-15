@@ -15,7 +15,6 @@ if str(_REPO) not in sys.path:
 import streamlit as st
 
 from sereno_core.jopai_brand_html import satisfaction_reassurance_box_html
-from sereno_core.proto_checklists import URGENCE_LABELS
 from sereno_core.proto_state import (
     enforce_client_journey,
     journey_nps_active,
@@ -24,6 +23,7 @@ from sereno_core.proto_state import (
     p_get,
     p_set,
     sync_session_sheet,
+    urgence_display_label,
 )
 from sereno_core.proto_ui import (
     proto_page_start,
@@ -92,7 +92,7 @@ if st.button("Envoyer mon avis", type="primary"):
                 stars=int(stars or 0) if mode != MODE_NPS else None,
                 commentaire=((comment or "").strip()[:500]),
                 urgence=ut,
-                type_intervention=URGENCE_LABELS.get(ut, ut),
+                type_intervention=urgence_display_label(ut),
             )
             _cmt = (comment or "").strip()
             _notes = f"NPS={int(nps or 0)}" if mode == MODE_NPS else f"STARS={int(stars or 0)}"
@@ -135,11 +135,11 @@ if st.button("Envoyer mon avis", type="primary"):
         body = quote("\n".join(body_lines))
         # Pilote : libellé public jopai-sereno@hotmail.com ; message adressé à la boîte de test propriétaire.
         mail_href = f"mailto:jop28@hotmail.com?subject={subj}&body={body}{cc}"
+        # Message de fin : toujours visible (même en mode minimaliste).
+        st.success("Merci pour votre retour.")
+
         if ui_label_on("satisfaction_contact_block"):
-            st.success(
-                "Merci pour votre retour. "
-                "Si besoin, vous pouvez nous contacter."
-            )
+            st.markdown("<p style='margin:0.15rem 0 0.35rem 0;'>Si besoin, vous pouvez nous contacter.</p>", unsafe_allow_html=True)
             st.markdown(
                 f"<p>Écrire à : <strong><a href=\"{mail_href}\">jopai-sereno@hotmail.com</a></strong></p>",
                 unsafe_allow_html=True,

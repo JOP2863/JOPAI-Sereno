@@ -41,30 +41,57 @@ def p_set(key: str, value: Any) -> None:
     st.session_state[_k(key)] = value
 
 
+def _refresh_urgence_catalog_session() -> None:
+    """Recharge l’onglet **Types_Urgence** (codes actifs + libellés) à chaque page prototype."""
+    repo = Path(__file__).resolve().parent.parent
+    try:
+        secrets = dict(st.secrets)
+    except Exception:
+        secrets = {}
+    try:
+        from sereno_core.sheets_types_urgence import bundle_urgence_catalog
+
+        ordered, codes, labels = bundle_urgence_catalog(repo, secrets)
+        p_set("urgence_types_ordered", ordered)
+        p_set("active_urgence_codes", codes)
+        p_set("urgence_labels_map", labels)
+    except Exception:
+        pass
+
+
+def urgence_display_label(code: str | None) -> str:
+    """Libellé affiché pour un ``type_code`` (feuille **Types_Urgence** si disponible, sinon repli code)."""
+    from sereno_core.proto_checklists import URGENCE_LABELS
+
+    c = str(code or "").strip().upper()
+    if not c:
+        return "—"
+    m = p_get("urgence_labels_map")
+    if isinstance(m, dict):
+        v = str(m.get(c) or "").strip()
+        if v:
+            return v
+    return str(URGENCE_LABELS.get(c, c))
+
+
 def ensure_demo_seed() -> None:
-    """Experts : priorité à l’onglet **Experts** Google Sheets (secrets) ; sinon repli démo local."""
-    if p_get("_demo_seeded"):
-        return
-    p_set("_demo_seeded", True)
+    """Experts : recharge depuis l’onglet **Experts** (Sheets) à chaque appel — évite une session figée sur d’anciennes données ; repli démo seulement au premier passage si Sheets indisponible."""
+    _refresh_urgence_catalog_session()
+    first = not p_get("_demo_seeded")
     repo = Path(__file__).resolve().parent.parent
     loaded: list[dict[str, Any]] | None = None
     try:
-        from sereno_core.sheets_experts import load_experts_from_streamlit_secrets
+        from sereno_core.sheets_experts import coerce_expert_types, load_experts_from_streamlit_secrets
 
-        loaded = load_experts_from_streamlit_secrets(repo)
+        # Pas de data-URL GCS ici : perf ; ``photo_url`` = URL colonne **photo** ou URL publique conventionnelle.
+        loaded = load_experts_from_streamlit_secrets(repo, eager_gcs_photo=False)
     except Exception:
         loaded = None
 
     if loaded:
-        try:
-            from sereno_core.sheets_experts import canonicalize_type_list
-
-            for row in loaded:
-                row["types"] = canonicalize_type_list(list(row.get("types") or []))
-        except Exception:
-            pass
-        p_set("artisans", loaded)
-    else:
+        artisans = [{**row, "types": coerce_expert_types(row.get("types"))} for row in loaded]
+        p_set("artisans", artisans)
+    elif first:
         # Repli hors Sheets : un vivier minimal couvrant tous les types (démo uniquement).
         p_set(
             "artisans",
@@ -81,8 +108,11 @@ def ensure_demo_seed() -> None:
                 },
             ],
         )
-    p_set("queue_waiting", 2)
-    p_set("events", [])
+
+    if first:
+        p_set("_demo_seeded", True)
+        p_set("queue_waiting", 2)
+        p_set("events", [])
 
 
 def new_session_id() -> str:
@@ -246,6 +276,11 @@ def enforce_client_journey(*, require_step: int) -> None:
     # Step 1
     if require_step >= 1:
         if not p_get("urgence_type") or not p_get("session_id"):
+            st.switch_page("pages/4_Proto_Client_accueil.py")
+            return
+        ut = str(p_get("urgence_type") or "").strip().upper()
+        ac = p_get("active_urgence_codes")
+        if ut and isinstance(ac, frozenset) and len(ac) > 0 and ut not in ac:
             st.switch_page("pages/4_Proto_Client_accueil.py")
             return
     # Step 2

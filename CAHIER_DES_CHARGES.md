@@ -1,7 +1,7 @@
 # Cahier des charges — SÉRÉNO (JOPAI BTP)
 
 **Document :** spécification produit et technique — prototype / pilote.  
-**Version :** 1.29 (en-tête parcours : logo **SÉRÉNO** à côté du pictogramme d’urgence ; overlay : **prénom** ; mise en relation : **Prénom Nom**).  
+**Version :** 1.32 (experts : rechargement Sheets à chaque page prototype ; colonne **photo** URL ; liste admin compacte ; filtre urgence robuste).  
 **Classification des sections :** Partie 1 — contexte & business · Partie 2 — fonctionnel · Partie 3 — technique · **Partie 4 — avancements** (idée → pilote → produit).
 
 **Comment lire ce cahier :**
@@ -565,6 +565,8 @@ CHAUFF	4	Chauffage	Chaudiere radiateur ECS	OUI
 SERR	5	Serrurerie	Porte bloccee acces	OUI
 ```
 
+**Prototype Streamlit (pilote) :** l’écran d’accueil **« En quoi pouvons-nous vous aider ? »** affiche uniquement les lignes avec **`actif` = oui** (OUI / TRUE / 1…), dans l’**ordre** indiqué, et utilise **`libelle_affichage`** pour le texte du bouton. Si la feuille est vide ou illisible, l’appli retombe sur les **5 codes** intégrés au code (`EAU` … `SERR`). Le secret optionnel **`types_urgence_worksheet_name`** permet de cibler un autre nom d’onglet.
+
 ---
 
 #### Onglet : `Checklist_SST`
@@ -630,6 +632,8 @@ expert_id	nom	email	telephone	actif	types_autorises	notes_internes	stripe_connec
 ```
 EXP-001	Dupont Jean	jean.dupont@example.com	+33600000000	OUI	EAU;ELEC;CHAUFF	Pilote		
 ```
+
+**Photo (pilote Streamlit) :** l’application charge l’image depuis **Google Cloud Storage** au chemin **`{prefix}/{expert_id}.jpg`** (compte de service), en essayant aussi **`.JPG` / `.jpeg`** si besoin. Dans la feuille, la colonne **`photo`** peut contenir ce **chemin objet** (ex. `artisan/EXP-001.jpg`), rester **vide**, ou une **URL absolue** en **https://** (ex. lien **storage.googleapis.com** vers l’objet) : cette dernière forme est notamment utilisée pour les **vignettes** de la page **Administration · Artisans (liste)** sans relire GCS côté serveur ; **éviter** les URLs console **storage.cloud.google.com** (souvent inutilisables dans une balise image navigateur).
 
 **Un artisan, plusieurs corps de métier :** **une seule ligne** par `expert_id` (identifiant unique). Renseigner tous les types dans **`types_autorises`**, codes séparés par **`;`** (ex. `EAU;GAZ;CHAUFF`). **Ne pas** dupliquer le même `expert_id` sur plusieurs lignes : cela casserait l’unicité et compliquerait file / sessions. Si un jour une **normalisation** est nécessaire, prévoir une feuille **`Expert_Types`** (`expert_id`, `type_code`) — une ligne par couple — en complément d’**une** ligne maîtresse dans `Experts`.
 
@@ -801,7 +805,7 @@ Même barre d’outils (recherche, déplier / replier) ; le CDC utilise en plus 
 - **Disponibilités (Sheets + Streamlit)** : onglets **`Disponibilite_Mois`**, **`Creneau_Astreinte`**, **`Indisponibilite_Exception`** ; création / en-têtes via **`init_google_sheet.py`**. **Saisie** : pages **`16_Admin_artisan_disponibilites.py`** et **`17_Admin_proprietaire_disponibilites.py`** ; listes **expert** = **une ligne par spécialité** (`Nom — Libellé urgence (expert_id)`), fonction **`disponibilite_expert_options`** dans `sereno_core/sheets_experts.py`. La page **`15_Disponibilite_artisans.py`** reste utilisable en **maintenance / lecture** mais **n’est plus** au menu Projet.
 - **Reporting indicateurs** : page **`19_Projet_reporting_indicateurs.py`** + module **`sereno_core/reporting_cdc_indicators.py`** — grille **3 colonnes** (indicateurs **§ 1.7**) avec **composants Streamlit variés** : `st.metric`, `st.progress` (simple et par ligne), `st.line_chart`, `st.area_chart`, `st.scatter_chart` (données d’exemple jusqu’au branchement BDD / analytics).
 - **Conformité réseau / API Pappers** : page **`18_Proto_Proprietaire_conformite.py`** ; interrogation entreprise par **SIREN** ; secret Streamlit **`PAPPERS_API_KEY`** ; client **`sereno_core/pappers_client.py`**. **Coût API** : chaque consultation est facturée — **cache** session en pilote ; en production, stocker la **réponse JSON complète** en base (table SQL **`papers`**, script **`scripts/sql/create_papers_cache_table.sql`**). **Suite produit** : croiser **certifications** et statut **MAIF** hors Pappers (§ 1.8).
-- **Experts du parcours prototype** : chargement prioritaire de l’onglet **`Experts`** du classeur Google Sheets (`gsheet_id` + compte de service) ; fusion des lignes partageant le même `expert_id` ; colonne **`types_autorises`** ou **`types_autorisees`** (codes séparés par `;` ou `,`). Repli local minimal si Sheets indisponible (`sereno_core/sheets_experts.py`).
+- **Experts du parcours prototype** : chargement depuis l’onglet **`Experts`** du classeur Google Sheets (`gsheet_id` + compte de service) **à chaque chargement de page prototype** (évite une session Streamlit « figée » sur d’anciennes lignes après correction du tableur) ; fusion des lignes partageant le même `expert_id` ; colonne **`types_autorises`** ou **`types_autorisees`** (codes séparés par `;` ou `,`). Normalisation défensive des types si une couche fournit une **chaîne** au lieu d’une liste (`coerce_expert_types`). Repli local minimal **uniquement au premier chargement** si Sheets est indisponible (`sereno_core/proto_state.py`, `sereno_core/sheets_experts.py`).
 - **Propriétaire — activité** : **entonnoir** (jalons du parcours démo), avis avec **type d’intervention**, export JSON des événements.
 - **Compte-rendu d’intervention (produit cible)** : après session, génération d’un **PDF de synthèse** (parcours, synthèse visio, pièces jointes) — **à concevoir** ; lien placeholder dans le mail de contact pilote.
 - **Mise en page Streamlit** : largeur du bloc principal **~70 %** pour **toutes** les sections (`apply_global_styles`) ; logo SÉRÉNO en **haut de barre latérale** si disponible (dossier `logo/` ou GCS).
@@ -873,6 +877,9 @@ Pour le **détail ligne à ligne**, le **mini-glossaire** et les **questions / r
 
 | Version | Date | Auteur | Résumé |
 |---------|------|--------|--------|
+| 1.32 | 2026-04-15 | JOPAI + assistant | **Experts prototype** : rechargement Sheets à chaque page (plus de vivier figé sur ``_demo_seeded``) ; **types** via ``coerce_expert_types`` ; page file **visio** : code urgence normalisé. **Photo** : URL **https** dans la colonne **photo** pour liste admin + chargement léger sans GCS en session ; fiche admin conserve GCS + data-URL si besoin. **Règle UX Cursor** : tableaux admin étroits / colonnes alignées. |
+| 1.31 | 2026-04-15 | JOPAI + assistant | **Photos artisans** : téléchargement GCS avec variantes **.jpg / .JPG / .jpeg** ; affichage choix prestataire via **``st.image``** (contournement blocage data-URL / bucket privé). **Admin fiche artisan** : **expert_id** auto ``EXP-###`` ; **types_autorises** en multiselect ; page plus compacte. |
+| 1.30 | 2026-04-15 | JOPAI + assistant | **Types_Urgence** câblé au prototype client : boutons d’accueil + libellés selon la feuille (`actif`, `ordre`, `libelle_affichage`) ; garde-fou si type désactivé ; **TOUS** (experts) n’étend plus que sur les types **actifs**. |
 | 1.29 | 2026-04-15 | JOPAI + assistant | **En-tête prototype (urgence)** : logo **SÉRÉNO** affiché **à côté** du pictogramme du type d’urgence (même taille, bords arrondis). **Overlay traitement** : texte **prénom** uniquement (sinon message générique). **Mise en relation** : message de sélection avec **Prénom Nom** (fallback `nom_affichage`). |
 | 1.28 | 2026-04-15 | JOPAI + assistant | **Administration · Pilote** : nouvelle page **Artisans (fiche)** (création / mise à jour dans l’onglet **Experts**, upload **photo JPG** vers **Google Cloud Storage** selon convention `artisan/{expert_id}.jpg`). **Experts** : clarification colonne **`prenom`** (sans accent) + photo par convention. **Satisfaction** : bloc de réassurance en **boîte** sous le titre (évite la duplication question NPS). |
 | 1.27 | 2026-04-15 | JOPAI + assistant | **Libellés minimalistes** étendus à tout le parcours client (accueil → paiement → satisfaction) + mode **custom** par libellé. **Satisfaction** : réglage propriétaire `SERENO_SATISFACTION_MODE` (**5 étoiles** par défaut ou **NPS**) + verbatim optionnel dans les deux cas. Page Paramétrage réorganisée en **4 cadrans** + tableau récapitulatif coloré. |

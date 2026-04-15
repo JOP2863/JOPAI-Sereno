@@ -27,3 +27,10 @@ alwaysApply: true
 ## Prototype client — rappel
 
 - Le fichier `inject_sereno_prototype_css()` ajoute en plus les styles des boutons urgence, SST, satisfaction, overlay « artisan travaille pour vous », etc.
+
+## Listes admin et tableaux (densité + alignement)
+
+- Pour les **listes d’artisans**, **sélection de prestataire**, ou tout listing type « ligne + action » : placer le bloc dans la **colonne de gauche** d’un `st.columns` (ex. `[0.46, 0.54]` ou `[0.52, 0.48]`) pour **ne pas étirer** le tableau sur toute la largeur (~70 %). En-tête **`<table style="width:max-content">`** + `st.columns` sur les lignes ; **ne pas** forcer `use_container_width=True` sur les boutons d’action si la colonne est étroite (sinon libellé **coupé** verticalement). Oublier le repère « 65 % » fixe : il dilue souvent le tableau au centre sans resserrer le contenu.
+- **Alignement** : photo étroite, textes à gauche, colonne d’**action** dédiée à droite (même si ce ne sont pas des cellules `<td>`).
+- **Actions dans la même fenêtre** : utiliser **`st.button`** (ou `st.session_state` + `st.rerun` / `st.switch_page`) — **éviter** les liens bruts `<a href="?foo=…">` dans `st.markdown`, qui peuvent provoquer une **navigation pleine page** ou un **nouvel onglet** selon le navigateur / l’iframe **Streamlit Cloud**.
+- **Vignettes photos** : préférer **`st.image`** + lecture **GCS** (compte de service) comme sur le choix prestataire client ; les `<img src="https://storage.googleapis.com/…">` seuls sont souvent **cassés** (bucket privé, politique de référent, etc.).

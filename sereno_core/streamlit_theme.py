@@ -20,11 +20,28 @@ def _busy_overlay_card_inner_html(*, use_assigned_expert: bool = True) -> str:
 
     if use_assigned_expert:
         try:
+            from pathlib import Path
+
             from sereno_core.proto_state import p_get
 
             ex = p_get("assigned_expert") or {}
             prenom = str(ex.get("prenom") or "").strip()
-            photo = str(ex.get("photo_url") or "").strip()
+            eid = str(ex.get("id") or "").strip()
+            photo = ""
+            if eid:
+                try:
+                    root = Path(__file__).resolve().parent.parent
+                    sec = dict(st.secrets)
+                    from sereno_core.gcs_artisan_photo import expert_photo_data_url
+
+                    photo = expert_photo_data_url(root, sec, expert_id=eid) or ""
+                except Exception:
+                    photo = ""
+            if not photo:
+                photo = str(ex.get("photo_url") or "").strip()
+            # URL console « authentifiée » : ne fonctionne pas en balise <img> pour les clients.
+            if "storage.cloud.google.com" in photo:
+                photo = ""
             img = ""
             if photo:
                 img = (

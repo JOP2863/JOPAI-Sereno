@@ -7,6 +7,7 @@ from __future__ import annotations
 import re
 import sys
 from datetime import UTC, datetime
+from html import escape
 from pathlib import Path
 
 _REPO = Path(__file__).resolve().parent.parent
@@ -15,7 +16,7 @@ if str(_REPO) not in sys.path:
 
 import streamlit as st
 
-from sereno_core.proto_checklists import URGENCE_LABELS
+from sereno_core.gcs_artisan_photo import download_artisan_photo_bytes
 from sereno_core.proto_helpers import pick_expert_for_urgence
 from sereno_core.artisan_notify import notify_expert
 from sereno_core.proto_state import (
@@ -25,9 +26,10 @@ from sereno_core.proto_state import (
     p_get,
     p_set,
     sync_session_sheet,
+    urgence_display_label,
 )
 from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
-from sereno_core.sheets_experts import canonicalize_type_list
+from sereno_core.sheets_experts import canonicalize_type_list, coerce_expert_types
 from sereno_core.visio_recording import build_visio_object_prefix, daily_api_key_from_secrets, daily_start_recording
 from sereno_core.ui_labels import ui_label_on
 
@@ -39,7 +41,9 @@ step_indicator(4, 7)
 
 enforce_client_journey(require_step=3)
 
-ut = p_get("urgence_type")
+_ut_raw = p_get("urgence_type")
+_ut_canon = canonicalize_type_list([_ut_raw] if _ut_raw is not None else [])
+ut = _ut_canon[0] if _ut_canon else None
 if not ut:
     st.stop()
 if journey_sst_active() and not p_get("sst_validated"):
@@ -52,8 +56,20 @@ if ui_label_on("file_wait_reassurance"):
     )
 
 artisans: list[dict] = list(p_get("artisans", []))
-elig = [a for a in artisans if ut in canonicalize_type_list(list(a.get("types") or []))]
+elig = [a for a in artisans if ut in coerce_expert_types(a.get("types"))]
 elig.sort(key=lambda a: int(a.get("ordre", 99)))
+
+# (Optionnel) lien profond ``?pick_expert=`` : conservé pour liens externes ; le choix courant passe par les boutons Streamlit.
+if "pick_expert" in st.query_params:
+    _raw = st.query_params["pick_expert"]
+    _pv = (_raw[0] if isinstance(_raw, list) else str(_raw or "")).strip()
+    if _pv and any(str(e.get("id") or "").strip() == _pv for e in elig):
+        st.session_state["expert_pick_id_mise_en_relation"] = _pv
+        try:
+            del st.query_params["pick_expert"]
+        except Exception:
+            pass
+        st.rerun()
 
 if not elig:
     st.error(
@@ -75,7 +91,7 @@ if not elig:
             else:
                 st.write(f"**{len(artisans)}** ligne(s) en session :")
                 for a in artisans:
-                    ts = canonicalize_type_list(list(a.get("types") or []))
+                    ts = coerce_expert_types(a.get("types"))
                     st.write(
                         f"- **{a.get('id', '?')}** — types normalisés : `{ts}` — ordre : {a.get('ordre', '—')}"
                     )
@@ -102,19 +118,22 @@ def _fmt_expert(a: dict) -> str:
 
 def _render_expert_picker(*, elig: list[dict], default_id: str) -> dict:
     """
-    Sélection artisan avec **photo** (compact, mobile-friendly).
-    Ne dépend pas d’un `selectbox` (qui ne supporte pas les vignettes).
+    Tableau aligné **à gauche** : zone resserrée (colonne gauche du layout) ; boutons **sans**
+    ``use_container_width`` pour éviter le libellé écrasé en colonne trop étroite.
     """
     st.markdown(
         """
 <style>
-.sereno-pick-row { display:flex; align-items:center; gap:10px; padding:7px 10px;
-  border:1px solid rgba(15,23,42,0.08); border-radius:12px; background:rgba(255,255,255,0.55); }
-.sereno-pick-name { font-weight:650; color:#0b2745; line-height:1.2; }
-.sereno-pick-sub { font-size:0.82rem; color:#334155; opacity:0.95; }
-.sereno-pick-photo { width:44px; height:44px; border-radius:50%; overflow:hidden;
-  border:2px solid rgba(0,51,102,0.12); background:rgba(255,255,255,0.65); flex:0 0 auto; }
-.sereno-pick-photo img { width:100%; height:100%; object-fit:cover; display:block; }
+.sereno-pick-name { font-weight:650;color:#0b2745;line-height:1.25;font-size:0.95rem; }
+.sereno-pick-sub { font-size:0.8rem;color:#334155;margin-top:2px; }
+.sereno-tbl-fit-wrap { width:max-content; max-width:100%; margin:0; }
+.sereno-tbl-fit-hdr { width:max-content; border-collapse:collapse; table-layout:auto; margin:0;
+  border:1px solid #e2e8f0; border-bottom:none; border-radius:8px 8px 0 0; background:#f1f5f9;
+  font-size:0.78rem; color:#0b2745; }
+.sereno-tbl-fit-hdr th { padding:8px 10px; font-weight:650; border-bottom:1px solid #e2e8f0; white-space:nowrap; }
+.sereno-tbl-fit-hdr th:nth-child(1) { text-align:center; }
+.sereno-tbl-fit-hdr th:nth-child(2) { text-align:left; }
+.sereno-tbl-fit-hdr th:nth-child(3) { text-align:right; }
 </style>
 """,
         unsafe_allow_html=True,
@@ -125,40 +144,68 @@ def _render_expert_picker(*, elig: list[dict], default_id: str) -> dict:
     if sel not in {str(e.get("id") or "").strip() for e in elig}:
         sel = default_id
 
-    for e in elig:
-        eid = str(e.get("id") or "").strip()
-        if not eid:
-            continue
-        ph = str(e.get("photo_url") or "").strip()
-        nm = _expert_display_name(e)
-        pr = str(e.get("ordre") or "—")
+    sec = dict(st.secrets)
+    # Colonne gauche = zone « tableau » ; droite laisse le vide (alignement gauche visuel).
+    _tbl_col, _rest = st.columns([0.46, 0.54])
+    with _tbl_col:
+        # Poids : texte au plus large utile, action seulement pour aligner avec l’en-tête (bouton en largeur intrinsèque).
+        _W_PH, _W_TX, _W_BT = 0.14, 0.62, 0.24
+        st.markdown(
+            '<div class="sereno-tbl-fit-wrap"><table class="sereno-tbl-fit-hdr"><thead><tr>'
+            "<th>Photo</th><th>Prestataire</th><th>Action</th>"
+            "</tr></thead></table></div>",
+            unsafe_allow_html=True,
+        )
 
-        cimg, ctext, cbtn = st.columns([0.14, 0.60, 0.26], vertical_alignment="center")
-        with cimg:
-            if ph:
+        rows = [e for e in elig if str(e.get("id") or "").strip()]
+        for idx, e in enumerate(rows):
+            eid = str(e.get("id") or "").strip()
+            nm = _expert_display_name(e)
+            pr = str(e.get("ordre") or "—")
+            cimg, ctext, cbtn = st.columns([_W_PH, _W_TX, _W_BT], vertical_alignment="center")
+            with cimg:
+                tup = download_artisan_photo_bytes(_REPO, sec, expert_id=eid)
+                if tup:
+                    st.image(tup[0], width=44)
+                else:
+                    st.markdown(
+                        "<div style='width:44px;height:44px;border-radius:50%;background:rgba(11,39,69,0.08);"
+                        "border:2px solid rgba(0,51,102,0.10);margin:0 auto;'></div>",
+                        unsafe_allow_html=True,
+                    )
+            with ctext:
                 st.markdown(
-                    f"<div class='sereno-pick-photo'><img src='{ph}' alt='' /></div>",
+                    f'<div class="sereno-pick-name">{escape(nm)}</div>'
+                    f'<div class="sereno-pick-sub">Priorité d’appel n°{escape(pr)}</div>',
                     unsafe_allow_html=True,
                 )
-            else:
+            with cbtn:
+                if eid == sel:
+                    st.button(
+                        "Sélectionné",
+                        key=f"pick_expert_sel_{eid}",
+                        type="primary",
+                        disabled=True,
+                        use_container_width=False,
+                    )
+                else:
+                    if st.button("Choisir", key=f"pick_expert_btn_{eid}", type="secondary", use_container_width=False):
+                        st.session_state[key] = eid
+                        st.rerun()
+            if idx < len(rows) - 1:
                 st.markdown(
-                    "<div class='sereno-pick-photo'></div>",
+                    "<div style='height:0;margin:0.15rem 0 0.25rem 0;"
+                    "border-bottom:1px solid #e2e8f0;'></div>",
                     unsafe_allow_html=True,
                 )
-        with ctext:
+        if rows:
             st.markdown(
-                f"<div class='sereno-pick-name'>{nm}</div>"
-                f"<div class='sereno-pick-sub'>Priorité d’appel n°{pr}</div>",
+                "<div style='height:0;margin:0;border-bottom:1px solid #e2e8f0;"
+                "border-radius:0 0 8px 8px;box-shadow:0 1px 4px rgba(0,51,102,0.06);'></div>",
                 unsafe_allow_html=True,
             )
-        with cbtn:
-            label = "Sélectionné" if eid == sel else "Choisir"
-            t = "primary" if eid == sel else "secondary"
-            if st.button(label, key=f"pick_{eid}", type=t, use_container_width=True):
-                st.session_state[key] = eid
-                sel = eid
-                st.rerun()
 
+    sel = str(st.session_state.get(key) or default_id or "").strip()
     return next((e for e in elig if str(e.get("id") or "").strip() == sel), elig[0])
 
 
@@ -166,8 +213,6 @@ default = p_get("assigned_expert")
 if not default or default.get("id") not in {e.get("id") for e in elig}:
     default = pick_expert_for_urgence(ut, artisans) or elig[0]
     p_set("assigned_expert", default)
-
-idx0 = next((i for i, e in enumerate(elig) if e.get("id") == default.get("id")), 0)
 
 if len(elig) > 1:
     st.subheader("Choisir votre prestataire")
@@ -201,24 +246,9 @@ if assigned.get("id") != p_get("_audit_last_expert_id"):
 
 st.success(
     f"**{_expert_display_name(assigned)}** est sélectionné pour votre demande "
-    f"({URGENCE_LABELS.get(ut, ut)}). "
+    f"({urgence_display_label(ut)}). "
     f"*Priorité d’appel n°{assigned.get('ordre', '—')} dans la file pour ce type d’urgence.*"
 )
-
-# Photo + nom (compact) au moment de la sélection
-ph = str(assigned.get("photo_url") or "").strip()
-if ph:
-    nm = _expert_display_name(assigned)
-    st.markdown(
-        "<div style='display:flex;gap:10px;align-items:center;margin:8px 0 2px 0;'>"
-        "<div style='width:44px;height:44px;border-radius:50%;overflow:hidden;"
-        "border:2px solid rgba(0,51,102,0.12);background:rgba(255,255,255,0.6);flex:0 0 auto;'>"
-        f"<img src='{ph}' alt='' style='width:100%;height:100%;object-fit:cover;display:block;'/>"
-        "</div>"
-        f"<div style='font-weight:650;color:#0b2745;line-height:1.2;'>{nm}</div>"
-        "</div>",
-        unsafe_allow_html=True,
-    )
 
 if ui_label_on("file_order_expander"):
     with st.expander("Voir l’ordre d’appel des experts (démo)"):
@@ -260,7 +290,7 @@ if st.button("Ouvrir la salle de visio", type="primary"):
                 expert=ex,
                 room_url=_room_url,
                 session_id=str(p_get("session_id") or ""),
-                urgence_label=str(URGENCE_LABELS.get(ut, ut)),
+                urgence_label=str(urgence_display_label(ut)),
                 client_display=str(p_get("client_prenom") or "").strip(),
             )
             if results:
@@ -280,7 +310,7 @@ if st.button("Ouvrir la salle de visio", type="primary"):
                     client_pseudo=str(p_get("client_prenom") or "client"),
                     session_id=str(p_get("session_id") or ""),
                     urgence_code=str(ut),
-                    urgence_label=str(URGENCE_LABELS.get(ut, ut)),
+                    urgence_label=str(urgence_display_label(ut)),
                 )
                 ok_rec, rec = daily_start_recording(api_key=api_key, room_url=_room_url)
                 if ok_rec:

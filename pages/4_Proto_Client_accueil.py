@@ -69,7 +69,8 @@ st.markdown("### Choisissez votre situation")
 _fcol, _ = st.columns([0.68, 0.32])
 with _fcol:
     st.markdown('<div class="sereno-urgence-buttons">', unsafe_allow_html=True)
-    for code, label in URGENCE_LABELS.items():
+    _ordered = p_get("urgence_types_ordered") or list(URGENCE_LABELS.items())
+    for code, label in _ordered:
         if st.button(label, key=f"urg_{code}", type="primary", use_container_width=True):
             with proto_processing_pause():
                 clear_client_branch_after_urgence_change()

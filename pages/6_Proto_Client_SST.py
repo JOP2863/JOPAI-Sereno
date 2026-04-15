@@ -13,7 +13,7 @@ if str(_REPO) not in sys.path:
 
 import streamlit as st
 
-from sereno_core.proto_checklists import CHECKLISTS, URGENCE_LABELS
+from sereno_core.proto_checklists import CHECKLISTS
 from sereno_core.proto_state import (
     enforce_client_journey,
     journey_sst_active,
@@ -21,6 +21,7 @@ from sereno_core.proto_state import (
     p_get,
     p_set,
     sync_session_sheet,
+    urgence_display_label,
 )
 from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
 from sereno_core.ui_labels import ui_label_on
@@ -52,7 +53,7 @@ if ui_label_on("sst_rassurance_html"):
 
 if ui_label_on("sst_reassurance_block"):
     reassurance(
-        f"**{URGENCE_LABELS.get(ut, ut)}** — validez **chaque** point ci-dessous pour continuer."
+        f"**{urgence_display_label(ut)}** — validez **chaque** point ci-dessous pour continuer."
     )
 
 all_ok = True
