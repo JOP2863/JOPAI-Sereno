@@ -213,6 +213,17 @@ def journey_next_after_visio_done() -> str:
 def journey_next_after_payment_success() -> str:
     if journey_nps_active():
         return "pages/10_Proto_Client_satisfaction.py"
+    # Dernière étape = paiement (si avis désactivé) : clôturer la session.
+    log_event("parcours_fin_apres_paiement", session_id=p_get("session_id"))
+    try:
+        sync_session_sheet(
+            {
+                "type_code": p_get("urgence_type"),
+                "statut": "CLOTUREE_PAIEMENT",
+            }
+        )
+    except Exception:
+        pass
     return "pages/4_Proto_Client_accueil.py"
 
 

@@ -127,7 +127,12 @@ UI_LABELS: tuple[UILabel, ...] = (
     UILabel(
         id="satisfaction_contact_block",
         owner_label="Satisfaction — bloc contact fin (mailto + texte long)",
-        default_in_minimal=True,
+        default_in_minimal=False,
+    ),
+    UILabel(
+        id="satisfaction_new_request_link",
+        owner_label="Satisfaction — lien “Nouvelle demande” (retour accueil)",
+        default_in_minimal=False,
     ),
 
     UILabel(

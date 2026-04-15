@@ -48,9 +48,18 @@ enforce_client_journey(require_step=6)
 
 if not journey_payment_active():
     p_set("payment_done", True)
-    st.switch_page(
-        "pages/10_Proto_Client_satisfaction.py" if journey_nps_active() else "pages/4_Proto_Client_accueil.py"
-    )
+    # Si l’avis est désactivé, le paiement (ou son absence) est la fin du parcours → clôture.
+    if not journey_nps_active():
+        try:
+            sync_session_sheet(
+                {
+                    "type_code": p_get("urgence_type"),
+                    "statut": "CLOTUREE_PARCOURS_COURT",
+                }
+            )
+        except Exception:
+            pass
+    st.switch_page("pages/10_Proto_Client_satisfaction.py" if journey_nps_active() else "pages/4_Proto_Client_accueil.py")
 
 if not p_get("visio_done"):
     st.stop()

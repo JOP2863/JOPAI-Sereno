@@ -148,5 +148,6 @@ if st.button("Envoyer mon avis", type="primary"):
                 f'<p style="font-size:0.95rem;"><a href="{mail_href}">Ouvrir ma messagerie</a></p>',
                 unsafe_allow_html=True,
             )
-        st.page_link("pages/4_Proto_Client_accueil.py", label="→ Nouvelle demande", icon="🏠")
+        if ui_label_on("satisfaction_new_request_link"):
+            st.page_link("pages/4_Proto_Client_accueil.py", label="→ Nouvelle demande", icon="🏠")
 
