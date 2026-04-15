@@ -1,7 +1,7 @@
 # Cahier des charges — SÉRÉNO (JOPAI BTP)
 
 **Document :** spécification produit et technique — prototype / pilote.  
-**Version :** 1.25 (parcours client : persistance **Config** Sheets partagée, menu latéral **masque** les pages inactives ; connexion pilote : e-mail / code **préremplis** par défaut).  
+**Version :** 1.29 (en-tête parcours : logo **SÉRÉNO** à côté du pictogramme d’urgence ; overlay : **prénom** ; mise en relation : **Prénom Nom**).  
 **Classification des sections :** Partie 1 — contexte & business · Partie 2 — fonctionnel · Partie 3 — technique · **Partie 4 — avancements** (idée → pilote → produit).
 
 **Comment lire ce cahier :**
@@ -873,6 +873,10 @@ Pour le **détail ligne à ligne**, le **mini-glossaire** et les **questions / r
 
 | Version | Date | Auteur | Résumé |
 |---------|------|--------|--------|
+| 1.29 | 2026-04-15 | JOPAI + assistant | **En-tête prototype (urgence)** : logo **SÉRÉNO** affiché **à côté** du pictogramme du type d’urgence (même taille, bords arrondis). **Overlay traitement** : texte **prénom** uniquement (sinon message générique). **Mise en relation** : message de sélection avec **Prénom Nom** (fallback `nom_affichage`). |
+| 1.28 | 2026-04-15 | JOPAI + assistant | **Administration · Pilote** : nouvelle page **Artisans (fiche)** (création / mise à jour dans l’onglet **Experts**, upload **photo JPG** vers **Google Cloud Storage** selon convention `artisan/{expert_id}.jpg`). **Experts** : clarification colonne **`prenom`** (sans accent) + photo par convention. **Satisfaction** : bloc de réassurance en **boîte** sous le titre (évite la duplication question NPS). |
+| 1.27 | 2026-04-15 | JOPAI + assistant | **Libellés minimalistes** étendus à tout le parcours client (accueil → paiement → satisfaction) + mode **custom** par libellé. **Satisfaction** : réglage propriétaire `SERENO_SATISFACTION_MODE` (**5 étoiles** par défaut ou **NPS**) + verbatim optionnel dans les deux cas. Page Paramétrage réorganisée en **4 cadrans** + tableau récapitulatif coloré. |
+| 1.26 | 2026-04-15 | JOPAI + assistant | **Visio** : mode **libellés minimalistes** (standard/minimal/custom) piloté via l’onglet **Config** (`SERENO_UI_*`) ; bouton unique “démarrer la visio” en minimal. **Sessions** : ajout colonne `user_ip` (capture best-effort via headers) pour distinguer des utilisateurs au-delà du pseudo. |
 | 1.25 | 2026-04-13 | JOPAI + assistant | Parcours : persistance **Config** (`sheets_journey_config`, préfixe ``SERENO_JOURNEY_``), menu client **sans** les pages désactivées ; formulaire **Se connecter** : e-mail et code pilote **préremplis** (démo) + reset à la déconnexion. |
 | 1.24 | 2026-04-13 | JOPAI + assistant | Page **Paramétrage parcours client** (menu Projet) : parcours **standard**, **simplifié** ou **personnalisé** (étapes optionnelles **SST**, **paiement**, **NPS**) ; clés `journey_*` dans **`proto_state`** conservées au reset parcours ; enchaînements mis à jour sur les pages prototype client. |
 | 1.23 | 2026-04-08 | JOPAI + assistant | **Twilio 30044** : piste **Trial / longueur SMS** + SMS **court** (`artisan_notify`) ; **Reporting** : graphiques variés (`reporting_cdc_indicators`) ; filigrane **pastel** ; accueil urgence : **`new_session_id`** systématique + overlay sans nom expert (`busy_overlay_use_assigned_expert`). |

@@ -24,6 +24,7 @@ from sereno_core.proto_state import (
 )
 from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
 from sereno_core.urgence_ambiance import JOURNEY_TAGLINE
+from sereno_core.ui_labels import ui_label_on
 
 proto_page_start(
     title="En quoi pouvons-nous vous aider ?",
@@ -42,11 +43,12 @@ border-radius:10px;box-shadow:0 2px 10px rgba(0,51,102,0.08);">
     unsafe_allow_html=True,
 )
 step_indicator(1, 7)
-reassurance(
-    "Vous êtes en sécurité ici : pas d’engagement immédiat, aucun paiement réel sur cette démonstration. "
-    "Réponse humaine d’un expert du bâtiment.",
-    compact=True,
-)
+if ui_label_on("accueil_reassurance"):
+    reassurance(
+        "Vous êtes en sécurité ici : pas d’engagement immédiat, aucun paiement réel sur cette démonstration. "
+        "Réponse humaine d’un expert du bâtiment.",
+        compact=True,
+    )
 
 st.markdown(
     """

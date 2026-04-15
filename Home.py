@@ -70,9 +70,9 @@ with st.sidebar:
 
 def _client_flow_pages(*, accueil_default: bool) -> list[st.Page]:
     from sereno_core.proto_state import journey_nps_active, journey_payment_active, journey_sst_active
+    from sereno_core.experience_settings import show_guide_page
 
     pages: list[st.Page] = [
-        st.Page("pages/13_Proto_Guide_parcours.py", title="Guide parcours", icon="🗺️"),
         st.Page(
             "pages/4_Proto_Client_accueil.py",
             title="Accueil urgence",
@@ -82,6 +82,8 @@ def _client_flow_pages(*, accueil_default: bool) -> list[st.Page]:
         ),
         st.Page("pages/5_Proto_Client_informations.py", title="Informations", icon="📝"),
     ]
+    if show_guide_page():
+        pages.insert(0, st.Page("pages/13_Proto_Guide_parcours.py", title="Guide parcours", icon="🗺️"))
     if journey_sst_active():
         pages.append(st.Page("pages/6_Proto_Client_SST.py", title="Sécurité (SST)", icon="🛡️"))
     pages.extend(
@@ -104,11 +106,6 @@ _projet = [
     st.Page("pages/2_Cahier_des_charges.py", title="Cahier des charges", icon="📋"),
     st.Page("pages/3_Carnet_echange.py", title="Carnet d’échange", icon="📒"),
     st.Page("pages/1_Tests_connexions.py", title="Tests connexions", icon="🔌"),
-    st.Page(
-        "pages/20_Projet_parametrage_parcours_client.py",
-        title="Paramétrage parcours client",
-        icon="🧭",
-    ),
 ]
 
 _prototype_artisan = [
@@ -121,6 +118,13 @@ _prototype_proprietaire = [
 ]
 
 _admin_pilote = [
+    st.Page(
+        "pages/20_Projet_parametrage_parcours_client.py",
+        title="Paramétrage expérience client",
+        icon="🧭",
+    ),
+    st.Page("pages/21_Admin_artisans.py", title="Artisans (fiche)", icon="🧑‍🔧"),
+    st.Page("pages/22_Admin_artisans_consultation.py", title="Artisans (liste)", icon="📇"),
     st.Page("pages/16_Admin_artisan_disponibilites.py", title="Dispo. artisan", icon="📆"),
     st.Page("pages/17_Admin_proprietaire_disponibilites.py", title="Dispo. réseau (proprio)", icon="🏢"),
 ]

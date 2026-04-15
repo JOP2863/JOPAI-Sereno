@@ -33,6 +33,7 @@ from sereno_core.proto_ui import (
     reassurance,
     step_indicator,
 )
+from sereno_core.ui_labels import ui_label_on
 
 FORFAIT_EUR = 50
 
@@ -54,17 +55,20 @@ if not journey_payment_active():
 if not p_get("visio_done"):
     st.stop()
 
-reassurance(
-    "Dans ce **pilote web**, la saisie reste **locale** au navigateur ; le numéro prérempli est une **carte de test** "
-    "courante (Stripe **4242…**) pour valider les contrôles de formulaire."
-)
+if ui_label_on("paiement_reassurance"):
+    reassurance(
+        "Dans ce **pilote web**, la saisie reste **locale** au navigateur ; le numéro prérempli est une **carte de test** "
+        "courante (Stripe **4242…**) pour valider les contrôles de formulaire."
+    )
 
-st.info(
-    "**Contrôles :** 13–19 chiffres, algorithme de Luhn, date d’expiration MM/YY future, CVC 3 ou 4 chiffres."
-)
+if ui_label_on("paiement_controls_info"):
+    st.info(
+        "**Contrôles :** 13–19 chiffres, algorithme de Luhn, date d’expiration MM/YY future, CVC 3 ou 4 chiffres."
+    )
 
-st.markdown(
-    f"""
+if ui_label_on("paiement_recap_card"):
+    st.markdown(
+        f"""
 <div class='sereno-card'>
 <strong>Récapitulatif</strong><br/>
 Session : <code>{p_get("session_id", "—")}</code><br/>
@@ -72,8 +76,8 @@ Montant : <strong>{FORFAIT_EUR} €</strong> TTC (indicatif)<br/>
 Statut : <em>Pilote — pas d’encaissement</em>
 </div>
 """,
-    unsafe_allow_html=True,
-)
+        unsafe_allow_html=True,
+    )
 
 fcol, _pad = st.columns([0.62, 0.38])
 with fcol:

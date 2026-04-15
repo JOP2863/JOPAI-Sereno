@@ -71,7 +71,10 @@ def ensure_demo_seed() -> None:
             [
                 {
                     "id": "EXP-DEMO-01",
-                    "nom": "Expert démo (hors Sheets)",
+                    "prenom": "Expert",
+                    "nom": "démo",
+                    "nom_affichage": "Expert démo",
+                    "photo_url": "",
                     "email": "demo@jopai-sereno.local",
                     "types": ["EAU", "ELEC", "GAZ", "CHAUFF", "SERR"],
                     "ordre": 1,
@@ -86,6 +89,13 @@ def new_session_id() -> str:
     sid = str(uuid4())[:8].upper()
     p_set("session_id", sid)
     p_set("_audit_last_expert_id", None)
+    # Si une IP a déjà été captée au chargement de page (proto_ui), la persister dès qu’un session_id existe.
+    try:
+        ip = str(p_get("user_ip") or "").strip()
+        if ip:
+            sync_session_sheet({"user_ip": ip})
+    except Exception:
+        pass
     return sid
 
 

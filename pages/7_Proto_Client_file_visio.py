@@ -29,6 +29,7 @@ from sereno_core.proto_state import (
 from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
 from sereno_core.sheets_experts import canonicalize_type_list
 from sereno_core.visio_recording import build_visio_object_prefix, daily_api_key_from_secrets, daily_start_recording
+from sereno_core.ui_labels import ui_label_on
 
 proto_page_start(
     title="Mise en relation avec un expert",
@@ -44,10 +45,11 @@ if not ut:
 if journey_sst_active() and not p_get("sst_validated"):
     st.stop()
 
-reassurance(
-    "Temps d’attente indicatif : **~1 minute**. "
-    "Un expert vous confirmera la prise en charge avant d’ouvrir la visio."
-)
+if ui_label_on("file_wait_reassurance"):
+    reassurance(
+        "Temps d’attente indicatif : **~1 minute**. "
+        "Un expert vous confirmera la prise en charge avant d’ouvrir la visio."
+    )
 
 artisans: list[dict] = list(p_get("artisans", []))
 elig = [a for a in artisans if ut in canonicalize_type_list(list(a.get("types") or []))]
@@ -58,35 +60,107 @@ if not elig:
         "Aucun expert n’est référencé pour ce type d’urgence. "
         "Revenez à l’accueil et choisissez une autre situation, ou complétez la liste des artisans."
     )
-    with st.expander("Diagnostic — experts chargés (pilote)"):
-        st.markdown(
-            "Le parcours **ne filtre pas** sur les créneaux (`Disponibilite_Mois`, `Creneau_Astreinte`) : "
-            "seul l’onglet **Experts** compte ici. Il faut au moins une ligne **actif** avec le **code** "
-            f"**{ut}** (ou **TOUS**) dans la colonne des types."
-        )
-        if not artisans:
-            st.warning(
-                "Aucun expert en session : vérifier **gsheet_id** dans les secrets, le partage du classeur "
-                "avec l’e-mail du **compte de service**, et l’existence de l’onglet **Experts**."
+    if ui_label_on("file_no_expert_diagnostic"):
+        with st.expander("Diagnostic — experts chargés (pilote)"):
+            st.markdown(
+                "Le parcours **ne filtre pas** sur les créneaux (`Disponibilite_Mois`, `Creneau_Astreinte`) : "
+                "seul l’onglet **Experts** compte ici. Il faut au moins une ligne **actif** avec le **code** "
+                f"**{ut}** (ou **TOUS**) dans la colonne des types."
             )
-        else:
-            st.write(f"**{len(artisans)}** ligne(s) en session :")
-            for a in artisans:
-                ts = canonicalize_type_list(list(a.get("types") or []))
-                st.write(
-                    f"- **{a.get('id', '?')}** — types normalisés : `{ts}` — ordre : {a.get('ordre', '—')}"
+            if not artisans:
+                st.warning(
+                    "Aucun expert en session : vérifier **gsheet_id** dans les secrets, le partage du classeur "
+                    "avec l’e-mail du **compte de service**, et l’existence de l’onglet **Experts**."
                 )
-            st.caption(
-                "Si `types` est vide : renommer la colonne en **types_autorises** ou remplir la cellule "
-                "(ex. `EAU;GAZ` ou `TOUS`). Puis **choisir à nouveau un type d’urgence** sur l’accueil pour une nouvelle session, "
-                "ou `python scripts/init_google_sheet.py --seed` si l’onglet n’a que l’en-tête."
-            )
+            else:
+                st.write(f"**{len(artisans)}** ligne(s) en session :")
+                for a in artisans:
+                    ts = canonicalize_type_list(list(a.get("types") or []))
+                    st.write(
+                        f"- **{a.get('id', '?')}** — types normalisés : `{ts}` — ordre : {a.get('ordre', '—')}"
+                    )
+                st.caption(
+                    "Si `types` est vide : renommer la colonne en **types_autorises** ou remplir la cellule "
+                    "(ex. `EAU;GAZ` ou `TOUS`). Puis **choisir à nouveau un type d’urgence** sur l’accueil pour une nouvelle session, "
+                    "ou `python scripts/init_google_sheet.py --seed` si l’onglet n’a que l’en-tête."
+                )
     if st.button("← Retour accueil", type="secondary"):
         st.switch_page("pages/4_Proto_Client_accueil.py")
     st.stop()
 
+def _expert_display_name(a: dict) -> str:
+    pn = str(a.get("prenom") or "").strip()
+    nm = str(a.get("nom") or "").strip()
+    if pn and nm:
+        return f"{pn} {nm}"
+    return str(a.get("nom_affichage") or nm or pn or "?").strip()
+
+
 def _fmt_expert(a: dict) -> str:
-    return f"{a.get('nom', '?')} ({a.get('id')}) — priorité d’appel {a.get('ordre', '—')}"
+    return f"{_expert_display_name(a)} ({a.get('id')}) — priorité d’appel {a.get('ordre', '—')}"
+
+
+def _render_expert_picker(*, elig: list[dict], default_id: str) -> dict:
+    """
+    Sélection artisan avec **photo** (compact, mobile-friendly).
+    Ne dépend pas d’un `selectbox` (qui ne supporte pas les vignettes).
+    """
+    st.markdown(
+        """
+<style>
+.sereno-pick-row { display:flex; align-items:center; gap:10px; padding:7px 10px;
+  border:1px solid rgba(15,23,42,0.08); border-radius:12px; background:rgba(255,255,255,0.55); }
+.sereno-pick-name { font-weight:650; color:#0b2745; line-height:1.2; }
+.sereno-pick-sub { font-size:0.82rem; color:#334155; opacity:0.95; }
+.sereno-pick-photo { width:44px; height:44px; border-radius:50%; overflow:hidden;
+  border:2px solid rgba(0,51,102,0.12); background:rgba(255,255,255,0.65); flex:0 0 auto; }
+.sereno-pick-photo img { width:100%; height:100%; object-fit:cover; display:block; }
+</style>
+""",
+        unsafe_allow_html=True,
+    )
+
+    key = "expert_pick_id_mise_en_relation"
+    sel = str(st.session_state.get(key) or default_id or "").strip()
+    if sel not in {str(e.get("id") or "").strip() for e in elig}:
+        sel = default_id
+
+    for e in elig:
+        eid = str(e.get("id") or "").strip()
+        if not eid:
+            continue
+        ph = str(e.get("photo_url") or "").strip()
+        nm = _expert_display_name(e)
+        pr = str(e.get("ordre") or "—")
+
+        cimg, ctext, cbtn = st.columns([0.14, 0.60, 0.26], vertical_alignment="center")
+        with cimg:
+            if ph:
+                st.markdown(
+                    f"<div class='sereno-pick-photo'><img src='{ph}' alt='' /></div>",
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    "<div class='sereno-pick-photo'></div>",
+                    unsafe_allow_html=True,
+                )
+        with ctext:
+            st.markdown(
+                f"<div class='sereno-pick-name'>{nm}</div>"
+                f"<div class='sereno-pick-sub'>Priorité d’appel n°{pr}</div>",
+                unsafe_allow_html=True,
+            )
+        with cbtn:
+            label = "Sélectionné" if eid == sel else "Choisir"
+            t = "primary" if eid == sel else "secondary"
+            if st.button(label, key=f"pick_{eid}", type=t, use_container_width=True):
+                st.session_state[key] = eid
+                sel = eid
+                st.rerun()
+
+    return next((e for e in elig if str(e.get("id") or "").strip() == sel), elig[0])
+
 
 default = p_get("assigned_expert")
 if not default or default.get("id") not in {e.get("id") for e in elig}:
@@ -97,18 +171,12 @@ idx0 = next((i for i, e in enumerate(elig) if e.get("id") == default.get("id")),
 
 if len(elig) > 1:
     st.subheader("Choisir votre prestataire")
-    st.caption(
-        "Plusieurs professionnels couvrent votre urgence. Celui affiché en **premier** est le plus prioritaire "
-        "par défaut ; vous pouvez en choisir un **autre** dans la liste."
-    )
-    pick_i = st.selectbox(
-        "Expert pour la prise en charge",
-        options=list(range(len(elig))),
-        index=idx0,
-        format_func=lambda i: _fmt_expert(elig[i]),
-        key="expert_pick_mise_en_relation",
-    )
-    chosen = elig[int(pick_i)]
+    if ui_label_on("file_multi_expert_explain"):
+        st.caption(
+            "Plusieurs professionnels couvrent votre urgence. Celui affiché en **premier** est le plus prioritaire "
+            "par défaut ; vous pouvez en choisir un **autre** dans la liste."
+        )
+    chosen = _render_expert_picker(elig=elig, default_id=str(default.get("id") or ""))
 else:
     chosen = elig[0]
 
@@ -132,14 +200,30 @@ if assigned.get("id") != p_get("_audit_last_expert_id"):
     )
 
 st.success(
-    f"**{assigned.get('nom', 'Expert')}** est sélectionné pour votre demande "
+    f"**{_expert_display_name(assigned)}** est sélectionné pour votre demande "
     f"({URGENCE_LABELS.get(ut, ut)}). "
     f"*Priorité d’appel n°{assigned.get('ordre', '—')} dans la file pour ce type d’urgence.*"
 )
 
-with st.expander("Voir l’ordre d’appel des experts (démo)"):
-    for a in elig:
-        st.write(f"{a.get('ordre', '—')}. **{a.get('nom')}** — {', '.join(a.get('types', []))}")
+# Photo + nom (compact) au moment de la sélection
+ph = str(assigned.get("photo_url") or "").strip()
+if ph:
+    nm = _expert_display_name(assigned)
+    st.markdown(
+        "<div style='display:flex;gap:10px;align-items:center;margin:8px 0 2px 0;'>"
+        "<div style='width:44px;height:44px;border-radius:50%;overflow:hidden;"
+        "border:2px solid rgba(0,51,102,0.12);background:rgba(255,255,255,0.6);flex:0 0 auto;'>"
+        f"<img src='{ph}' alt='' style='width:100%;height:100%;object-fit:cover;display:block;'/>"
+        "</div>"
+        f"<div style='font-weight:650;color:#0b2745;line-height:1.2;'>{nm}</div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+if ui_label_on("file_order_expander"):
+    with st.expander("Voir l’ordre d’appel des experts (démo)"):
+        for a in elig:
+            st.write(f"{a.get('ordre', '—')}. **{_expert_display_name(a)}** — {', '.join(a.get('types', []))}")
 
 if st.button("Ouvrir la salle de visio", type="primary"):
     with proto_processing_pause():

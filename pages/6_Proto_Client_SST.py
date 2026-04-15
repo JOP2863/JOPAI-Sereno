@@ -23,6 +23,7 @@ from sereno_core.proto_state import (
     sync_session_sheet,
 )
 from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
+from sereno_core.ui_labels import ui_label_on
 
 proto_page_start(
     title="Sécurité avant la visio",
@@ -41,16 +42,18 @@ if not ut:
 
 items = CHECKLISTS.get(ut, [])
 
-st.markdown(
-    "<div class='sereno-sst-reassure'><strong>Rassurance :</strong> ces étapes vous protègent "
-    "vous et l’expert. En cas de danger immédiat (incendie, gaz fort, blessure), "
-    "<strong>contactez les secours</strong> avant toute visio.</div>",
-    unsafe_allow_html=True,
-)
+if ui_label_on("sst_rassurance_html"):
+    st.markdown(
+        "<div class='sereno-sst-reassure'><strong>Rassurance :</strong> ces étapes vous protègent "
+        "vous et l’expert. En cas de danger immédiat (incendie, gaz fort, blessure), "
+        "<strong>contactez les secours</strong> avant toute visio.</div>",
+        unsafe_allow_html=True,
+    )
 
-reassurance(
-    f"**{URGENCE_LABELS.get(ut, ut)}** — validez **chaque** point ci-dessous pour continuer."
-)
+if ui_label_on("sst_reassurance_block"):
+    reassurance(
+        f"**{URGENCE_LABELS.get(ut, ut)}** — validez **chaque** point ci-dessous pour continuer."
+    )
 
 all_ok = True
 for i, line in enumerate(items):
@@ -100,4 +103,5 @@ with c1:
         st.switch_page("pages/5_Proto_Client_informations.py")
 
 if items and not all_ok:
-    st.caption("Validez **tous** les points sécurité pour passer à la suite.")
+    if ui_label_on("sst_footer_caption"):
+        st.caption("Validez **tous** les points sécurité pour passer à la suite.")

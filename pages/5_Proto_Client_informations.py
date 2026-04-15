@@ -33,6 +33,7 @@ from sereno_core.proto_state import (
     sync_session_sheet,
 )
 from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
+from sereno_core.ui_labels import ui_label_on
 
 proto_page_start(
     title="Quelques informations utiles",
@@ -46,24 +47,27 @@ ut = p_get("urgence_type")
 if not ut:
     st.stop()
 
-reassurance(
-    f"Urgence sélectionnée : **{URGENCE_LABELS.get(ut, ut)}**. "
-    "Vous pourrez préciser le détail avec l’expert en visio."
-)
+if ui_label_on("infos_urgence_reassurance"):
+    reassurance(
+        f"Urgence sélectionnée : **{URGENCE_LABELS.get(ut, ut)}**. "
+        "Vous pourrez préciser le détail avec l’expert en visio."
+    )
 
 _accent, _bg, _text = _URG_BAND.get(ut, ("#003366", "#f4f7f9", "#003366"))
-st.markdown(
-    f"<div class='sereno-infos-panne-band' style='border-left-color:{_accent};background:{_bg};color:{_text};'>"
-    f"<strong>Consignes pour votre situation ({URGENCE_LABELS.get(ut, ut)})</strong> — "
-    "restez prudent·e : les prochaines étapes rappellent la sécurité avant d’ouvrir la visio.</div>",
-    unsafe_allow_html=True,
-)
+if ui_label_on("infos_consigne_band"):
+    st.markdown(
+        f"<div class='sereno-infos-panne-band' style='border-left-color:{_accent};background:{_bg};color:{_text};'>"
+        f"<strong>Consignes pour votre situation ({URGENCE_LABELS.get(ut, ut)})</strong> — "
+        "restez prudent·e : les prochaines étapes rappellent la sécurité avant d’ouvrir la visio.</div>",
+        unsafe_allow_html=True,
+    )
 
-st.markdown(
-    "<div class='sereno-sst-reassure'>Indicatif <strong>+33</strong> prérempli : complétez avec votre numéro "
-    "sans le 0 initial du portable français (ex. <strong>+33 6 12 34 56 78</strong>).</div>",
-    unsafe_allow_html=True,
-)
+if ui_label_on("infos_phone_help"):
+    st.markdown(
+        "<div class='sereno-sst-reassure'>Indicatif <strong>+33</strong> prérempli : complétez avec votre numéro "
+        "sans le 0 initial du portable français (ex. <strong>+33 6 12 34 56 78</strong>).</div>",
+        unsafe_allow_html=True,
+    )
 
 with st.form("infos_client"):
     fp, _ = st.columns([0.5, 0.5])
@@ -96,7 +100,8 @@ with st.form("infos_client"):
 
 if submitted:
     suffix = (tel_suffix or "").strip().replace(" ", "")
-    full_tel = f"+33 {suffix}" if suffix else "+33"
+    # Google Sheets interprète souvent "+33 ..." comme un nombre (→ "33"). On force un texte stable.
+    full_tel = f"+33{suffix}" if suffix else "+33"
     with proto_processing_pause():
         p_set("client_prenom", (prenom or "").strip() or "—")
         p_set("client_tel", full_tel)
@@ -112,6 +117,9 @@ if submitted:
         contact = str(p_get("client_tel") or "").strip()
         if em:
             contact = f"{contact} | {em}" if contact else em
+        # Forcer texte dans Sheets si ça commence par "+" (sinon Sheets peut le convertir en nombre).
+        if contact.startswith("+") and not contact.startswith("'"):
+            contact = "'" + contact
         sync_session_sheet(
             {
                 "user_pseudo": str(p_get("client_prenom") or ""),

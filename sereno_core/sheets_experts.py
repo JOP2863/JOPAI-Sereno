@@ -23,6 +23,7 @@ try:
 except ModuleNotFoundError:
     import tomli as tomllib  # type: ignore[no-redef, unused-ignore]
 
+from sereno_core.gcs_artisan_photo import expert_photo_data_url, expert_photo_public_url
 from sereno_core.proto_checklists import URGENCE_LABELS
 
 _VALID_CODES = frozenset(URGENCE_LABELS.keys())
@@ -329,18 +330,25 @@ def load_experts_from_sheets(
         actif_raw = _flex_get(nr, "actif", "active", "enabled", "on")
         if not _row_actif_ok(actif_raw if actif_raw is not None else "OUI"):
             continue
-        nom_raw = _flex_get(nr, "nom", "name", "expert_nom")
-        nom = str(nom_raw).strip() if nom_raw is not None else ""
-        nom = nom or eid
+        prenom = str(_flex_get(nr, "prenom", "prenom_expert", "first_name", "firstname") or "").strip()
+        nom_famille = str(_flex_get(nr, "nom", "name", "nom_famille", "nom_expert") or "").strip()
+        if not nom_famille and not prenom:
+            nom_famille = eid
+        nom_affichage = f"{prenom} {nom_famille}".strip() if prenom else nom_famille
         email_raw = _flex_get(nr, "email", "mail", "courriel")
         email = str(email_raw).strip() if email_raw is not None else ""
         tel_raw = _flex_get(nr, "telephone", "téléphone", "tel", "tél", "phone", "mobile", "portable")
         telephone = str(tel_raw).strip() if tel_raw is not None else ""
         types = _row_types(nr)
+        # Photo : privilégier une data-URL (accès via compte de service) ; repli sur URL publique si bucket public.
+        photo_url = expert_photo_data_url(repo_root, secrets, expert_id=eid) or expert_photo_public_url(eid, secrets)
         if eid not in merged:
             merged[eid] = {
                 "id": eid,
-                "nom": nom,
+                "prenom": prenom,
+                "nom": nom_famille,
+                "nom_affichage": nom_affichage,
+                "photo_url": photo_url,
                 "email": email or f"{eid.lower().replace(' ', '_')}@sereno.pilote.local",
                 "telephone": telephone,
                 "types": list(types),
@@ -356,6 +364,16 @@ def load_experts_from_sheets(
                 m["email"] = email
             if telephone and len(telephone) >= 6:
                 m["telephone"] = telephone
+            if prenom and not str(m.get("prenom") or "").strip():
+                m["prenom"] = prenom
+            if nom_famille and (not str(m.get("nom") or "").strip() or str(m.get("nom")) == eid):
+                m["nom"] = nom_famille
+            pn = str(m.get("prenom") or "").strip()
+            nf = str(m.get("nom") or "").strip()
+            m["nom_affichage"] = f"{pn} {nf}".strip() if pn else nf
+            m["photo_url"] = expert_photo_data_url(repo_root, secrets, expert_id=eid) or expert_photo_public_url(
+                eid, secrets
+            )
 
     out = list(merged.values())
     out.sort(key=lambda x: int(x.get("ordre", 99)))
@@ -375,7 +393,7 @@ def disponibilite_expert_options(
         eid = str(a.get("id") or "").strip()
         if not eid:
             continue
-        nom = str(a.get("nom") or eid).strip()
+        nom = str(a.get("nom_affichage") or a.get("nom") or eid).strip()
         types = list(a.get("types") or [])
         if not types:
             lab = f"{nom} ({eid})"

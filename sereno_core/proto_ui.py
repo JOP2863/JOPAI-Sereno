@@ -8,7 +8,9 @@ from contextlib import contextmanager
 import streamlit as st
 
 from sereno_core.jopai_brand_html import nps_recommend_question_html, page_title_h1_html
+from sereno_core.experience_settings import show_brand_suffix_in_titles
 from sereno_core.proto_state import ensure_demo_seed, p_get, p_set
+from sereno_core.request_context import get_user_ip
 from sereno_core.streamlit_theme import inject_sereno_prototype_css
 from sereno_core.urgence_ambiance import inject_urgence_ambiance_css, render_proto_header_with_urgence
 
@@ -24,6 +26,24 @@ def proto_page_start(
 ) -> None:
     inject_sereno_prototype_css(busy_overlay_use_assigned_expert=busy_overlay_use_assigned_expert)
     ensure_demo_seed()
+    # Réglage propriétaire : masquer par défaut le suffixe “by JOPAI© SÉRÉNO” dans les titres.
+    if not show_brand_suffix_in_titles():
+        title_brand_suffix = False
+    # Capturer l'IP “best-effort” une seule fois par session, pour distinguer des utilisateurs (même pseudo démo).
+    if not p_get("user_ip"):
+        try:
+            ip = get_user_ip()
+            if ip:
+                p_set("user_ip", ip)
+                try:
+                    # Best-effort : si l'onglet Sessions n'a pas la colonne, l'upsert ignore.
+                    from sereno_core.proto_state import sync_session_sheet
+
+                    sync_session_sheet({"user_ip": ip})
+                except Exception:
+                    pass
+        except Exception:
+            pass
     ut = p_get("urgence_type")
     if show_urgence_ambiance:
         inject_urgence_ambiance_css(ut)
@@ -38,7 +58,10 @@ def proto_page_start(
             title_brand_suffix=title_brand_suffix,
         )
     else:
-        st.markdown(page_title_h1_html(title, brand_suffix=title_brand_suffix), unsafe_allow_html=True)
+        st.markdown(
+            page_title_h1_html(title, brand_suffix=title_brand_suffix, show_sereno_suffix=not title_brand_suffix),
+            unsafe_allow_html=True,
+        )
         if subtitle:
             st.caption(subtitle)
 
@@ -89,7 +112,7 @@ def proto_nav_overlay_once(flag_key: str) -> None:
 
 
 def render_interactive_stars(*, state_key: str = "stars_selected") -> int:
-    """Note 1–5 : étoiles regroupées au centre ; sélection en or + halo léger (sans encadrement)."""
+    """Note 1–5 : étoiles alignées à gauche, serrées (mobile), sélection en or (CSS global)."""
     current = int(p_get(state_key, 0) or 0)
     gold_rules = "".join(
         f'div[class*="st-key-star_pick_{i}"] button, div[class*="st-key-star_pick_{i}"] button p {{ '
@@ -102,9 +125,12 @@ def render_interactive_stars(*, state_key: str = "stars_selected") -> int:
     if gold_rules:
         st.markdown(f"<style>{gold_rules}</style>", unsafe_allow_html=True)
     st.markdown("**Votre note** *(1 à 5)*")
-    _pad, mid, _pad2 = st.columns([0.22, 0.56, 0.22])
-    with mid:
-        cols = st.columns(5)
+    row, _pad = st.columns([0.96, 0.04])
+    with row:
+        try:
+            cols = st.columns(5, gap="small")
+        except TypeError:
+            cols = st.columns(5)
         for i in range(1, 6):
             with cols[i - 1]:
                 label = "★" if i <= current else "☆"
@@ -114,11 +140,12 @@ def render_interactive_stars(*, state_key: str = "stars_selected") -> int:
     return int(p_get(state_key, 0) or 0)
 
 
-def render_nps_buttons(*, state_key: str = "nps_selected") -> int | None:
+def render_nps_buttons(*, state_key: str = "nps_selected", show_recommend_html: bool = True) -> int | None:
     """NPS 0–10 : une seule rangée, couleurs détracteurs / passifs / promoteurs (CSS global)."""
     current = p_get(state_key, None)
-    st.markdown(nps_recommend_question_html(), unsafe_allow_html=True)
-    st.caption("Échelle de **0** (pas du tout) à **10** (tout à fait).")
+    if show_recommend_html:
+        st.markdown(nps_recommend_question_html(), unsafe_allow_html=True)
+        st.caption("Échelle de **0** (pas du tout) à **10** (tout à fait).")
     _l, row, _r = st.columns([0.04, 0.92, 0.04])
     with row:
         cols = st.columns(11)

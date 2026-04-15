@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 from pathlib import Path
 
 import streamlit as st
@@ -137,11 +138,14 @@ def render_proto_header_with_urgence(
     title_brand_suffix: bool = True,
 ) -> None:
     """
-    Titre + sous-titre + accroche parcours à gauche ; **icône ~2×** à droite, alignée en **haut**
-    (même ligne que le titre).
+    Titre + sous-titre + accroche parcours à gauche ; à droite **icône urgence** + **logo SÉRÉNO**
+    (même taille, bords arrondis), alignés en **haut** avec le titre.
     """
     if not ut or ut not in _URGENCE_STYLE:
-        st.markdown(page_title_h1_html(title, brand_suffix=title_brand_suffix), unsafe_allow_html=True)
+        st.markdown(
+            page_title_h1_html(title, brand_suffix=title_brand_suffix, show_sereno_suffix=not title_brand_suffix),
+            unsafe_allow_html=True,
+        )
         if subtitle:
             st.caption(subtitle)
         return
@@ -151,7 +155,10 @@ def render_proto_header_with_urgence(
     except TypeError:
         left, right = st.columns([3.55, 1.45])
     with left:
-        st.markdown(page_title_h1_html(title, brand_suffix=title_brand_suffix), unsafe_allow_html=True)
+        st.markdown(
+            page_title_h1_html(title, brand_suffix=title_brand_suffix, show_sereno_suffix=not title_brand_suffix),
+            unsafe_allow_html=True,
+        )
         if subtitle:
             st.caption(subtitle)
         if show_journey_tagline:
@@ -165,16 +172,50 @@ def render_proto_header_with_urgence(
             )
     with right:
         ib = get_urgence_icon_bytes(ut)
+        try:
+            from sereno_core.streamlit_theme import get_sereno_logo_bytes
+
+            sb = get_sereno_logo_bytes()
+        except Exception:
+            sb = None
+
+        def _data_url(b: bytes, mime: str) -> str:
+            return f"data:{mime};base64,{base64.b64encode(b).decode('ascii')}"
+
+        # Même taille visuelle pour urgence + SÉRÉNO, côte à côte (flex ; petits écrans : pas de wrap).
+        chip_wrap = (
+            "flex:0 0 auto;width:88px;height:88px;border-radius:14px;overflow:hidden;"
+            "background:rgba(255,255,255,0.55);box-shadow:0 1px 6px rgba(0,51,102,0.12);"
+            "display:flex;align-items:center;justify-content:center;"
+        )
+        img_tile = (
+            "flex:0 0 auto;width:88px;height:88px;object-fit:contain;border-radius:14px;padding:4px;"
+            "box-sizing:border-box;background:rgba(255,255,255,0.55);"
+            "box-shadow:0 1px 6px rgba(0,51,102,0.12);"
+        )
+
+        parts: list[str] = []
         if ib:
-            img_bytes, _mime = ib
-            st.image(img_bytes, width=168)
+            b0, m0 = ib
+            parts.append(f"<img src='{_data_url(b0, m0)}' alt='' style='{img_tile}' />")
         else:
             short = ut[:4] if len(ut) > 4 else ut
+            parts.append(
+                f"<div style='{chip_wrap}'>"
+                f"<span style='background:{stl['chip_bg']};color:#fff;font-weight:800;font-size:1.02rem;"
+                f"padding:0.55rem 0.65rem;border-radius:12px;border:2px solid {stl['chip_border']};'>"
+                f"{short}</span></div>"
+            )
+        if sb:
+            b1, m1 = sb
+            parts.append(f"<img src='{_data_url(b1, m1)}' alt='SÉRÉNO' style='{img_tile}' />")
+
+        if parts:
             st.markdown(
-                f"<div style='text-align:right;margin-top:0.05rem'>"
-                f"<span style='display:inline-block;background:{stl['chip_bg']};color:#fff;"
-                f"font-weight:800;font-size:1.05rem;padding:0.7rem 0.9rem;border-radius:12px;"
-                f"border:2px solid {stl['chip_border']};'>{short}</span></div>",
+                "<div class='sereno-header-dual-logos' style='display:flex;flex-direction:row;flex-wrap:nowrap;"
+                "gap:10px;justify-content:flex-end;align-items:flex-start;margin-top:0.05rem;max-width:100%;'>"
+                + "".join(parts)
+                + "</div>",
                 unsafe_allow_html=True,
             )
 
@@ -192,6 +233,10 @@ def inject_urgence_ambiance_css(ut: str | None) -> None:
                 background: transparent !important;
                 box-shadow: none !important;
             }}
+            .sereno-header-dual-logos {{
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }}
             </style>
             """,
             unsafe_allow_html=True,
@@ -206,6 +251,10 @@ def inject_urgence_ambiance_css(ut: str | None) -> None:
             border-radius: 14px;
             padding: 1.1rem 1.35rem 2rem 1.35rem !important;
             box-shadow: inset 0 0 0 1px rgba(0, 51, 102, 0.06);
+        }}
+        .sereno-header-dual-logos {{
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }}
         </style>
         """,

@@ -39,17 +39,38 @@ def by_jopai_sereno_suffix_html() -> str:
     )
 
 
-def page_title_h1_html(title: str, *, brand_suffix: bool = True) -> str:
+def page_title_h1_html(title: str, *, brand_suffix: bool = False, show_sereno_suffix: bool = True) -> str:
     """
     Titre principal : texte échappé + suffixe marque.
     Afficher avec ``st.markdown(..., unsafe_allow_html=True)``.
     """
     esc = escape((title or "").strip())
     n = COLOR_JOPAI_TITLE_NAVY
-    suf = by_jopai_sereno_suffix_html() if brand_suffix else ""
+    if brand_suffix:
+        suf = by_jopai_sereno_suffix_html()
+    elif show_sereno_suffix:
+        suf = " " + sereno_word_inline_html()
+    else:
+        suf = ""
     return (
         f'<h1 style="font-family:Inter,\'Segoe UI\',system-ui,sans-serif;line-height:1.28;color:{n};margin-bottom:0.25rem;">'
         f"{esc}{suf}</h1>"
+    )
+
+
+def satisfaction_reassurance_box_html() -> str:
+    """Bloc court sous le titre page satisfaction (NPS ou étoiles)."""
+    j = jopai_copyright_inline_html()
+    s = sereno_word_inline_html()
+    n = COLOR_JOPAI_TITLE_NAVY
+    return (
+        f"<div style='border-left:4px solid #003366;padding:12px 14px;border-radius:10px;"
+        f"background:#e8f0f9;margin:0 0 14px 0;font-family:Inter,\"Segoe UI\",system-ui,sans-serif;'>"
+        f"<p style='margin:0 0 6px 0;font-size:1.05rem;font-weight:650;color:{n};'>"
+        f"<strong>Recommanderiez-vous</strong> {j} {s} <strong>à un proche&nbsp;?</strong></p>"
+        f"<p style='margin:0;font-size:0.92rem;color:{n};opacity:0.92;font-style:italic;'>"
+        "Quelques secondes — cela nous aide à améliorer le service."
+        "</p></div>"
     )
 
 

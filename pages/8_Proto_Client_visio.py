@@ -32,6 +32,7 @@ from sereno_core.proto_ui import (
     step_indicator,
 )
 from sereno_core.visio_recording import daily_api_key_from_secrets, daily_stop_recording
+from sereno_core.ui_labels import ui_label_on
 
 
 def _secret_get(key: str) -> str:
@@ -70,60 +71,82 @@ reassurance(
 )
 
 if _integrated:
-    st.success(
-        "**Salle configurée (pilote) :** lien **Daily** ou **Twilio** lu depuis les secrets Streamlit — "
-        "prévoir en production des **jetons** à durée courte générés côté serveur."
+    if ui_label_on("visio_demo_warning"):
+        st.success(
+            "**Salle configurée (pilote) :** lien **Daily** ou **Twilio** lu depuis les secrets Streamlit — "
+            "prévoir en production des **jetons** à durée courte générés côté serveur."
+        )
+    st.link_button(
+        f"Démarrer la visio avec {ex.get('nom', 'l’expert')}",
+        _integrated,
+        type="primary",
     )
-    st.link_button("Ouvrir la salle (Daily / Twilio — secrets)", _integrated, type="primary")
-    with st.expander("Démo publique Jitsi (sans secrets)"):
-        st.caption("Ne pas y partager d’infos sensibles.")
-        st.link_button("Ouvrir Jitsi (nouvel onglet)", jitsi_url, type="secondary")
+    if ui_label_on("visio_secondary_links"):
+        with st.expander("Démo publique Jitsi (sans secrets)"):
+            st.caption("Ne pas y partager d’infos sensibles.")
+            st.link_button("Ouvrir Jitsi (nouvel onglet)", jitsi_url, type="secondary")
 else:
-    st.warning(
-        "**Démonstration :** la salle Jitsi ci-dessous est **publique** (ne pas y partager d’infos sensibles en vrai usage). "
-        "Pour brancher **Daily** ou **Twilio** sans code lourd : renseigner **`daily_room_url`** ou **`twilio_video_room_url`** "
-        "dans `.streamlit/secrets.toml` (voir `config/streamlit-secrets.EXAMPLE.toml`)."
+    if ui_label_on("visio_demo_warning"):
+        st.warning(
+            "**Démonstration :** la salle Jitsi ci-dessous est **publique** (ne pas y partager d’infos sensibles en vrai usage). "
+            "Pour brancher **Daily** ou **Twilio** sans code lourd : renseigner **`daily_room_url`** ou **`twilio_video_room_url`** "
+            "dans `.streamlit/secrets.toml` (voir `config/streamlit-secrets.EXAMPLE.toml`)."
+        )
+    if ui_label_on("visio_secondary_links"):
+        c1, c2 = st.columns(2)
+        with c1:
+            st.link_button("Ouvrir Jitsi (nouvel onglet)", jitsi_url, type="primary")
+        with c2:
+            st.link_button("Lien cible intégration (exemple)", spec_url, type="secondary")
+    else:
+        st.link_button(
+            f"Démarrer la visio avec {ex.get('nom', 'l’expert')}",
+            jitsi_url,
+            type="primary",
+        )
+
+if ui_label_on("visio_in_page_iframe"):
+    st.markdown("**Visio dans la page** (Jitsi — autoriser caméra / micro si le navigateur demande) :")
+    if not _integrated:
+        components.iframe(jitsi_url, height=440)
+    else:
+        st.caption(
+            "Avec une salle Daily/Twilio en **nouvel onglet**, l’iframe Jitsi est masquée pour éviter deux salles concurrentes."
+        )
+
+if ui_label_on("visio_sdk_mock"):
+    st.markdown("**Maquette réservée au produit final** (plein écran mobile, lampe torche, etc.) :")
+    components.html(
+        f"""
+        <div style="height:120px;background:linear-gradient(180deg,#1a237e 0%,#0d1642 100%);color:#e8eaf6;
+                    display:flex;flex-direction:column;align-items:center;justify-content:center;
+                    font-family:Inter,Segoe UI,sans-serif;border-radius:12px;border:2px solid #3949ab;font-size:0.95rem;">
+          Emplacement SDK visio natif (Daily / Twilio) · session <strong>{_sid}</strong>
+        </div>
+        """,
+        height=140,
     )
-    c1, c2 = st.columns(2)
+
+mic = True
+torch = False
+if ui_label_on("visio_demo_toggles"):
+    c1, c2, c3 = st.columns(3)
     with c1:
-        st.link_button("Ouvrir Jitsi (nouvel onglet)", jitsi_url, type="primary")
+        mic = st.toggle("Micro activé (démo)", value=True)
     with c2:
-        st.link_button("Lien cible intégration (exemple)", spec_url, type="secondary")
+        torch = st.toggle("Lampe torche (démo)", value=False)
+    with c3:
+        st.caption("Les interrupteurs sont **factices** ici ; ils montreront l’UX cible sur mobile.")
 
-st.markdown("**Visio dans la page** (Jitsi — autoriser caméra / micro si le navigateur demande) :")
-if not _integrated:
-    components.iframe(jitsi_url, height=440)
-else:
-    st.caption("Avec une salle Daily/Twilio en **nouvel onglet**, l’iframe Jitsi est masquée pour éviter deux salles concurrentes.")
-
-st.markdown("**Maquette réservée au produit final** (plein écran mobile, lampe torche, etc.) :")
-components.html(
-    f"""
-    <div style="height:120px;background:linear-gradient(180deg,#1a237e 0%,#0d1642 100%);color:#e8eaf6;
-                display:flex;flex-direction:column;align-items:center;justify-content:center;
-                font-family:Inter,Segoe UI,sans-serif;border-radius:12px;border:2px solid #3949ab;font-size:0.95rem;">
-      Emplacement SDK visio natif (Daily / Twilio) · session <strong>{_sid}</strong>
-    </div>
-    """,
-    height=140,
-)
-
-c1, c2, c3 = st.columns(3)
-with c1:
-    mic = st.toggle("Micro activé (démo)", value=True)
-with c2:
-    torch = st.toggle("Lampe torche (démo)", value=False)
-with c3:
-    st.caption("Les interrupteurs sont **factices** ici ; ils montreront l’UX cible sur mobile.")
-
-st.code(f"Jitsi : {jitsi_url}\nCible prod : {spec_url}", language="text")
+if ui_label_on("visio_urls_box"):
+    st.code(f"Jitsi : {jitsi_url}\nCible prod : {spec_url}", language="text")
 
 c1, c2 = st.columns(2)
 with c1:
     if st.button("← Retour file d’attente", type="secondary"):
         st.switch_page("pages/7_Proto_Client_file_visio.py")
 with c2:
-    if st.button("J’ai terminé la visio", type="primary"):
+    if st.button("Terminer la visio", type="primary"):
         with proto_processing_pause():
             p_set("visio_done", True)
             p_set("visio_demo_mic", mic)

@@ -11,10 +11,11 @@ import streamlit as st
 
 from sereno_core import design_tokens as dt
 from sereno_core.jopai_brand_html import filigrane_second_line_html, footer_brand_block_html, sidebar_brand_line_html
+from sereno_core.experience_settings import show_watermark
 
 
 def _busy_overlay_card_inner_html(*, use_assigned_expert: bool = True) -> str:
-    """Ligne centrale de la carte overlay : nom de l’expert si demandé et déjà assigné (sinon message générique)."""
+    """Ligne centrale de la carte overlay : **prénom** + photo ronde si disponibles (sinon message générique)."""
     from html import escape
 
     if use_assigned_expert:
@@ -22,9 +23,20 @@ def _busy_overlay_card_inner_html(*, use_assigned_expert: bool = True) -> str:
             from sereno_core.proto_state import p_get
 
             ex = p_get("assigned_expert") or {}
-            nom = str(ex.get("nom") or "").strip()
-            if nom:
-                return f"<strong>{escape(nom)}</strong> travaille pour vous…"
+            prenom = str(ex.get("prenom") or "").strip()
+            photo = str(ex.get("photo_url") or "").strip()
+            img = ""
+            if photo:
+                img = (
+                    "<div style='margin:0 auto 10px;width:44px;height:44px;border-radius:50%;overflow:hidden;"
+                    "border:2px solid rgba(0,51,102,0.15);'>"
+                    f"<img src='{escape(photo)}' alt='' "
+                    "style='width:100%;height:100%;object-fit:cover;display:block;'/>"
+                    "</div>"
+                )
+            if prenom:
+                return img + f"<strong>{escape(prenom)}</strong> travaille pour vous…"
+            return img + escape("Votre artisan travaille pour vous…")
         except Exception:
             pass
     return escape("Votre artisan travaille pour vous…")
@@ -65,6 +77,37 @@ def _logo_from_local_dir(logo_dir: Path) -> str:
     return ""
 
 
+def _sereno_logo_gcs_candidates() -> list[str]:
+    custom = ""
+    try:
+        custom = (st.secrets.get("gcs_logo_blob_path") or "").strip()
+    except Exception:
+        custom = ""
+    out: list[str] = []
+    if custom:
+        out.append(custom)
+    out.extend(
+        [
+            "Logos/JOPAI-LogoSereno.jpg",
+            "Logos/JOPAI-LogoSereno.jpeg",
+            "Logos/JOPAI-LogoSereno.png",
+            "Logos/JOPAI-LogoSereno.jp",
+        ]
+    )
+    return out
+
+
+def _mime_for_blob_path(used: str) -> str:
+    ext = Path(used).suffix.lower()
+    if ext == ".png":
+        return "image/png"
+    if ext == ".webp":
+        return "image/webp"
+    if ext in (".jpg", ".jpeg", ".jp"):
+        return "image/jpeg"
+    return "image/jpeg"
+
+
 def _logo_html_from_gcs(root: Path) -> str:
     """Objet attendu : `Logos/JOPAI-LogoSereno.jpg` (bucket `gcs_bucket_name`)."""
     try:
@@ -75,18 +118,7 @@ def _logo_html_from_gcs(root: Path) -> str:
         bucket_name = (st.secrets.get("gcs_bucket_name") or "").strip()
         if not bucket_name:
             return ""
-        custom = (st.secrets.get("gcs_logo_blob_path") or "").strip()
-        candidates: list[str] = []
-        if custom:
-            candidates.append(custom)
-        candidates.extend(
-            [
-                "Logos/JOPAI-LogoSereno.jpg",
-                "Logos/JOPAI-LogoSereno.jpeg",
-                "Logos/JOPAI-LogoSereno.png",
-                "Logos/JOPAI-LogoSereno.jp",
-            ]
-        )
+        candidates = _sereno_logo_gcs_candidates()
         info = get_service_account_info(root, st.secrets)
         creds = credentials_for_gcp_clients(info)
         client = storage.Client(credentials=creds, project=info.get("project_id"))
@@ -104,17 +136,77 @@ def _logo_html_from_gcs(root: Path) -> str:
                 break
         if not data:
             return ""
-        ext = Path(used).suffix.lower()
-        mime = "image/jpeg"
-        if ext == ".png":
-            mime = "image/png"
-        elif ext == ".webp":
-            mime = "image/webp"
-        elif ext in (".jpg", ".jpeg", ".jp"):
-            mime = "image/jpeg"
+        mime = _mime_for_blob_path(used)
         return _logo_html_from_bytes(data, mime)
     except Exception:
         return ""
+
+
+def get_sereno_logo_bytes() -> tuple[bytes, str] | None:
+    """
+    Logo marque **SÉRÉNO** (mêmes sources que le logo page : dossier ``logo/`` puis GCS).
+    Retour ``(octets, mime)`` pour ``st.image`` / data-URL, ou ``None``.
+    """
+    key = "_sereno_logo_bytes_tuple_v1"
+    if key in st.session_state:
+        hit = st.session_state[key]
+        return hit if isinstance(hit, tuple) else None
+
+    root = _repo_root()
+    logo_dir = root / "logo"
+    if logo_dir.is_dir():
+        all_files = sorted(
+            p for p in logo_dir.iterdir() if p.is_file() and p.suffix.lower() in _LOGO_EXTENSIONS
+        )
+        preferred = [p for p in all_files if "sereno" in p.name.lower()]
+        for lp in preferred or all_files:
+            try:
+                mime = {
+                    ".png": "image/png",
+                    ".jpg": "image/jpeg",
+                    ".jpeg": "image/jpeg",
+                    ".webp": "image/webp",
+                }.get(lp.suffix.lower(), "image/png")
+                tup = (lp.read_bytes(), mime)
+                st.session_state[key] = tup
+                return tup
+            except OSError:
+                continue
+
+    try:
+        from google.cloud import storage
+
+        from sereno_core.gcp_credentials import credentials_for_gcp_clients, get_service_account_info
+
+        bucket_name = (st.secrets.get("gcs_bucket_name") or "").strip()
+        if not bucket_name:
+            st.session_state[key] = False
+            return None
+        info = get_service_account_info(root, st.secrets)
+        creds = credentials_for_gcp_clients(info)
+        client = storage.Client(credentials=creds, project=info.get("project_id"))
+        bucket = client.bucket(bucket_name)
+        data: bytes | None = None
+        used = ""
+        for blob_path in _sereno_logo_gcs_candidates():
+            blob = bucket.blob(blob_path)
+            try:
+                data = blob.download_as_bytes()
+            except Exception:
+                data = None
+            if data:
+                used = blob_path
+                break
+        if not data:
+            st.session_state[key] = False
+            return None
+        mime = _mime_for_blob_path(used)
+        tup = (data, mime)
+        st.session_state[key] = tup
+        return tup
+    except Exception:
+        st.session_state[key] = False
+        return None
 
 
 def _build_page_logo_html() -> str:
@@ -334,18 +426,24 @@ def inject_sereno_prototype_css(*, busy_overlay_use_assigned_expert: bool = True
             width: 100% !important;
         }}
 
-        /* Étoiles satisfaction : fond neutre, pas de cadre ; or appliqué par surcharge dynamique (proto_ui) */
+        /* Étoiles satisfaction : alignées à gauche, serrées, non sélectionnées plus lisibles */
+        section.main [data-testid="stHorizontalBlock"]:has(div[class*="st-key-star_pick_1"]) {{
+            justify-content: flex-start !important;
+            width: fit-content !important;
+            max-width: 100% !important;
+        }}
         div[class*="st-key-star_pick_"] button {{
-            font-size: 2.5rem !important;
+            font-size: 1.85rem !important;
             line-height: 1 !important;
-            min-height: 3rem !important;
-            padding: 0.2rem 0.35rem !important;
+            min-height: 2.55rem !important;
+            padding: 0.08rem 0.12rem !important;
             background: transparent !important;
             border: none !important;
             box-shadow: none !important;
             outline: none !important;
-            color: #bdbdbd !important;
-            -webkit-text-fill-color: #bdbdbd !important;
+            color: #546e7a !important;
+            -webkit-text-fill-color: #546e7a !important;
+            text-shadow: 0 0 0.55px #263238, 0 0 1px rgba(38, 50, 56, 0.45) !important;
             transition: color 0.15s ease, transform 0.15s ease !important;
         }}
         div[class*="st-key-star_pick_"] button:focus-visible {{
@@ -354,7 +452,7 @@ def inject_sereno_prototype_css(*, busy_overlay_use_assigned_expert: bool = True
             border-radius: 6px !important;
         }}
         div[class*="st-key-star_pick_"] button p {{
-            font-size: 2.5rem !important;
+            font-size: 1.85rem !important;
             line-height: 1 !important;
         }}
 
@@ -468,6 +566,7 @@ def inject_sereno_prototype_css(*, busy_overlay_use_assigned_expert: bool = True
 def apply_global_styles() -> None:
     """Typo globale, barre bleu souverain, logo, footer JOPAI."""
     page_logo_html = _build_page_logo_html()
+    wm = show_watermark()
 
     st.markdown(
         f"""
@@ -621,9 +720,10 @@ def apply_global_styles() -> None:
         }}
         </style>
         <div class="sereno-brand-topbar" aria-hidden="true"></div>
-        <div class="jopai-construction-filigrane" aria-hidden="true">
-            <div class="jopai-construction-filigrane__stripe">Site en construction<br />{filigrane_second_line_html()}</div>
-        </div>
+        {"<div class=\"jopai-construction-filigrane\" aria-hidden=\"true\">"
+         "<div class=\"jopai-construction-filigrane__stripe\">Site en construction<br />"
+         + filigrane_second_line_html()
+         + "</div></div>" if wm else ""}
         __JOPAI_PAGE_LOGO__
         <div class="jopai-footer">
             {footer_brand_block_html()}
