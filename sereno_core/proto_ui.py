@@ -89,12 +89,44 @@ def step_indicator(current: int, total: int = 6) -> None:
 
 
 @contextmanager
-def proto_processing_pause():
+def proto_processing_pause(*, busy_card_inner_html: str | None = None):
     """
-    Affiche le spinner Streamlit → overlay pastel (carte : **nom de l’expert** assigné si connu,
-    sinon « Votre artisan SÉRÉNO travaille pour vous… » — voir `inject_sereno_prototype_css`).
-    À utiliser autour des traitements après soumission.
+    Affiche le spinner Streamlit → overlay pastel (carte : **prénom** de l’assigné si connu,
+    sinon « L'équipe SÉRÉNO travaille pour vous… » (ou équipe tant que le choix multi-artisans
+    n'est pas confirmé) — voir `inject_sereno_prototype_css`).
+
+    Si ``busy_card_inner_html`` est fourni (HTML **sûr**, contrôlé par l’app), une carte **parallèle**
+    remplace visuellement l’overlay par défaut pendant le spinner (ex. message de clôture satisfaction).
     """
+    if busy_card_inner_html:
+        st.markdown(
+            f"""
+            <style>
+            body:has([data-testid="stSpinner"]) .sereno-busy-overlay--default {{
+                display: none !important;
+            }}
+            .sereno-busy-overlay.sereno-busy-overlay--custom {{
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(200, 220, 232, 0.5);
+                backdrop-filter: blur(2px);
+                z-index: 2147482100;
+                align-items: center;
+                justify-content: center;
+                pointer-events: none;
+            }}
+            body:has([data-testid="stSpinner"]) .sereno-busy-overlay.sereno-busy-overlay--custom {{
+                display: flex !important;
+                pointer-events: auto;
+            }}
+            </style>
+            <div class="sereno-busy-overlay sereno-busy-overlay--custom" aria-live="polite" aria-busy="true">
+                <div class="sereno-busy-card">{busy_card_inner_html}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     with st.spinner(" "):
         time.sleep(0.65)
         yield
@@ -133,7 +165,8 @@ def render_interactive_stars(*, state_key: str = "stars_selected") -> int:
             cols = st.columns(5)
         for i in range(1, 6):
             with cols[i - 1]:
-                label = "★" if i <= current else "☆"
+                # Espaces insécables : évite une césure du libellé sur très petits écrans.
+                label = "\u00a0★\u00a0" if i <= current else "\u00a0☆\u00a0"
                 if st.button(label, key=f"star_pick_{i}"):
                     p_set(state_key, i)
                     st.rerun()

@@ -1,7 +1,7 @@
 # Cahier des charges — SÉRÉNO (JOPAI BTP)
 
 **Document :** spécification produit et technique — prototype / pilote.  
-**Version :** 1.32 (experts : rechargement Sheets à chaque page prototype ; colonne **photo** URL ; liste admin compacte ; filtre urgence robuste).  
+**Version :** 1.34 (SST : validation **une fois pour toutes** paramétrable **Config** ; file visio : bio dans le bandeau vert si un seul artisan).  
 **Classification des sections :** Partie 1 — contexte & business · Partie 2 — fonctionnel · Partie 3 — technique · **Partie 4 — avancements** (idée → pilote → produit).
 
 **Comment lire ce cahier :**
@@ -542,7 +542,7 @@ cle	valeur	description
 ```
 FORFAIT_CENTIMES	5000	Montant forfait session en centimes (ex: 50 EUR)
 DEVISE	EUR	Code ISO devise
-MESSAGE_FILE	Merci de patienter, un expert vous rejoint.	Réassurance file d attente
+MESSAGE_FILE	Merci de patienter, notre expert vous rejoint.	Réassurance file d attente
 VERSION_REGLES	1	Incrementer si changement majeur checklist
 PILOTE_PAIEMENT_MODE	FAKE	Simulation sans PSP — aligne le code sur le flux fake
 ```
@@ -634,6 +634,8 @@ EXP-001	Dupont Jean	jean.dupont@example.com	+33600000000	OUI	EAU;ELEC;CHAUFF	Pil
 ```
 
 **Photo (pilote Streamlit) :** l’application charge l’image depuis **Google Cloud Storage** au chemin **`{prefix}/{expert_id}.jpg`** (compte de service), en essayant aussi **`.JPG` / `.jpeg`** si besoin. Dans la feuille, la colonne **`photo`** peut contenir ce **chemin objet** (ex. `artisan/EXP-001.jpg`), rester **vide**, ou une **URL absolue** en **https://** (ex. lien **storage.googleapis.com** vers l’objet) : cette dernière forme est notamment utilisée pour les **vignettes** de la page **Administration · Artisans (liste)** sans relire GCS côté serveur ; **éviter** les URLs console **storage.cloud.google.com** (souvent inutilisables dans une balise image navigateur).
+
+**Texte court côté client (`essentiel_bio`) :** phrase optionnelle (quelques mots) saisie en fiche **Administration · Artisans** ; affichée sous le nom du prestataire sur l’écran **choix du prestataire** (file / visio), avec la **priorité d’appel** en dessous. Les classeurs existants peuvent ajouter la colonne **`essentiel_bio`** manuellement ou via **`migrate_google_sheet_schema.py`** / ré-init ciblée.
 
 **Un artisan, plusieurs corps de métier :** **une seule ligne** par `expert_id` (identifiant unique). Renseigner tous les types dans **`types_autorises`**, codes séparés par **`;`** (ex. `EAU;GAZ;CHAUFF`). **Ne pas** dupliquer le même `expert_id` sur plusieurs lignes : cela casserait l’unicité et compliquerait file / sessions. Si un jour une **normalisation** est nécessaire, prévoir une feuille **`Expert_Types`** (`expert_id`, `type_code`) — une ligne par couple — en complément d’**une** ligne maîtresse dans `Experts`.
 
@@ -877,6 +879,8 @@ Pour le **détail ligne à ligne**, le **mini-glossaire** et les **questions / r
 
 | Version | Date | Auteur | Résumé |
 |---------|------|--------|--------|
+| 1.34 | 2026-04-16 | JOPAI + assistant | **SST** : option **Config** `SERENO_SST_SINGLE_ACK_BUTTON` (défaut **true**) — un bouton valide toutes les consignes ; sinon un bouton par point. **Paramétrage** : case sous **Affichage global**. **File / visio** : si **un seul** artisan, **`essentiel_bio`** dans le **bandeau vert** (bloc succès) sous la ligne de sélection. |
+| 1.33 | 2026-04-16 | JOPAI + assistant | Parcours client : libellés **notre expert** (ton plus personnel) ; file **visio** : pas d’en-tête HTML « Photo / Prestataire / Action », **~1 minute** sans emphase gras, **priorité d’appel** surtout dans la liste, message de succès épuré. **Experts** : colonne **`essentiel_bio`** (schéma graine + fiche admin + lecture liste) ; **satisfaction** : overlay de remerciement **SÉRÉNO** + **étoiles** tenues sur une ligne mobile (CSS). |
 | 1.32 | 2026-04-15 | JOPAI + assistant | **Experts prototype** : rechargement Sheets à chaque page (plus de vivier figé sur ``_demo_seeded``) ; **types** via ``coerce_expert_types`` ; page file **visio** : code urgence normalisé. **Photo** : URL **https** dans la colonne **photo** pour liste admin + chargement léger sans GCS en session ; fiche admin conserve GCS + data-URL si besoin. **Règle UX Cursor** : tableaux admin étroits / colonnes alignées. |
 | 1.31 | 2026-04-15 | JOPAI + assistant | **Photos artisans** : téléchargement GCS avec variantes **.jpg / .JPG / .jpeg** ; affichage choix prestataire via **``st.image``** (contournement blocage data-URL / bucket privé). **Admin fiche artisan** : **expert_id** auto ``EXP-###`` ; **types_autorises** en multiselect ; page plus compacte. |
 | 1.30 | 2026-04-15 | JOPAI + assistant | **Types_Urgence** câblé au prototype client : boutons d’accueil + libellés selon la feuille (`actif`, `ordre`, `libelle_affichage`) ; garde-fou si type désactivé ; **TOUS** (experts) n’étend plus que sur les types **actifs**. |

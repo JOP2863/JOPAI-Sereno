@@ -17,6 +17,9 @@ import streamlit as st
 from sereno_core.gcp_credentials import credentials_for_sheets, get_service_account_info
 from sereno_core.jopai_brand_html import page_title_h1_html
 from sereno_core.sheets_schema import SHEET_TABS
+from sereno_core.streamlit_theme import inject_button_zoom_resilience_css
+
+inject_button_zoom_resilience_css()
 
 st.markdown(page_title_h1_html("Disponibilités artisans (Sheets)"), unsafe_allow_html=True)
 st.caption(

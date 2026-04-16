@@ -95,6 +95,11 @@ UI_LABELS: tuple[UILabel, ...] = (
         default_in_minimal=False,
     ),
     UILabel(
+        id="file_expert_priority_line",
+        owner_label="Mise en relation — ligne « Priorité d’appel n°… » sous chaque prestataire",
+        default_in_minimal=False,
+    ),
+    UILabel(
         id="file_order_expander",
         owner_label="Mise en relation — expander “Voir l’ordre d’appel des experts (démo)”",
         default_in_minimal=False,

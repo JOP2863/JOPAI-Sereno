@@ -44,7 +44,7 @@ def _secret_get(key: str) -> str:
 
 proto_page_start(
     title="Visio-assistance",
-    subtitle="Échange vidéo avec l’expert.",
+    subtitle="Échange vidéo avec notre expert.",
 )
 proto_nav_overlay_once("_sereno_overlay_visio")
 step_indicator(5, 7)
@@ -55,7 +55,7 @@ if not p_get("assigned_expert"):
     st.stop()
 
 ex = p_get("assigned_expert")
-_visio_call = str(ex.get("prenom") or "").strip() or str(ex.get("nom") or "l’expert").strip()
+_visio_call = str(ex.get("prenom") or "").strip() or str(ex.get("nom") or "notre expert").strip()
 _sid = str(p_get("session_id") or "DEMO")
 _room = re.sub(r"[^a-zA-Z0-9]", "", f"Sereno{_sid}")[:48] or "SerenoDemo"
 jitsi_url = f"https://meet.jit.si/{_room}#config.prejoinPageEnabled=false"

@@ -13,6 +13,7 @@ from sereno_core.config_kv import config_upsert_pairs, invalidate_config_kv_cach
 KEY_SHOW_WATERMARK = "SERENO_UI_SHOW_WATERMARK"
 KEY_SHOW_BRAND_SUFFIX = "SERENO_UI_SHOW_BRAND_SUFFIX"
 KEY_SHOW_GUIDE_PAGE = "SERENO_UI_SHOW_GUIDE_PAGE"
+KEY_SST_SINGLE_ACK_BUTTON = "SERENO_SST_SINGLE_ACK_BUTTON"
 
 
 def _as_bool(v: str) -> bool:
@@ -49,6 +50,12 @@ def show_guide_page() -> bool:
     return _as_bool(kv.get(KEY_SHOW_GUIDE_PAGE, "false"))
 
 
+def sst_single_ack_button() -> bool:
+    """SST : un seul bouton valide toutes les consignes d’un coup (défaut : True). Si False, un bouton par consigne."""
+    kv = _kv()
+    return _as_bool(kv.get(KEY_SST_SINGLE_ACK_BUTTON, "true"))
+
+
 def persist_experience_flags(
     repo_root: Path,
     secrets: object,
@@ -56,6 +63,7 @@ def persist_experience_flags(
     watermark: bool,
     brand_suffix: bool,
     guide_page: bool,
+    sst_single_ack: bool = True,
 ) -> tuple[bool, str]:
     ok, err = config_upsert_pairs(
         repo_root,
@@ -64,6 +72,7 @@ def persist_experience_flags(
             (KEY_SHOW_WATERMARK, "true" if watermark else "false"),
             (KEY_SHOW_BRAND_SUFFIX, "true" if brand_suffix else "false"),
             (KEY_SHOW_GUIDE_PAGE, "true" if guide_page else "false"),
+            (KEY_SST_SINGLE_ACK_BUTTON, "true" if sst_single_ack else "false"),
         ],
     )
     if ok:

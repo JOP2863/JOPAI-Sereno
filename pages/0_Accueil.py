@@ -8,6 +8,10 @@ import io
 
 import streamlit as st
 
+from sereno_core.streamlit_theme import inject_button_zoom_resilience_css
+
+inject_button_zoom_resilience_css()
+
 from sereno_core.app_urls import client_urgency_entry_url
 from sereno_core.jopai_brand_html import page_title_h1_html
 from sereno_core.projet_navigation_intro import COVER_INTRO_MARKDOWN, NAVIGATION_INTRO_MARKDOWN

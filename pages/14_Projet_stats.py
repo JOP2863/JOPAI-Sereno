@@ -17,6 +17,9 @@ import streamlit as st
 from sereno_core.formatting import format_thousands_int
 from sereno_core.jopai_brand_html import page_title_h1_html
 from sereno_core.project_line_counts import count_project_source_lines, top_py_files_by_lines
+from sereno_core.streamlit_theme import inject_button_zoom_resilience_css
+
+inject_button_zoom_resilience_css()
 
 st.markdown(page_title_h1_html("Métriques projet"), unsafe_allow_html=True)
 st.caption(

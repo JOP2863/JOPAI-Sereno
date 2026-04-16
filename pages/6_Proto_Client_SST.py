@@ -23,6 +23,7 @@ from sereno_core.proto_state import (
     sync_session_sheet,
     urgence_display_label,
 )
+from sereno_core.experience_settings import sst_single_ack_button
 from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
 from sereno_core.ui_labels import ui_label_on
 
@@ -46,7 +47,7 @@ items = CHECKLISTS.get(ut, [])
 if ui_label_on("sst_rassurance_html"):
     st.markdown(
         "<div class='sereno-sst-reassure'><strong>Rassurance :</strong> ces étapes vous protègent "
-        "vous et l’expert. En cas de danger immédiat (incendie, gaz fort, blessure), "
+        "vous et notre expert. En cas de danger immédiat (incendie, gaz fort, blessure), "
         "<strong>contactez les secours</strong> avant toute visio.</div>",
         unsafe_allow_html=True,
     )
@@ -56,27 +57,50 @@ if ui_label_on("sst_reassurance_block"):
         f"**{urgence_display_label(ut)}** — validez **chaque** point ci-dessous pour continuer."
     )
 
+_one_btn = sst_single_ack_button()
 all_ok = True
-for i, line in enumerate(items):
-    key_done = f"sst_line_{ut}_{i}"
-    done = bool(p_get(key_done))
-    st.markdown(
-        f"<div class='sereno-sst-alert'><strong>Point sécurité {i + 1} / {len(items)}</strong><br/>{line}</div>",
-        unsafe_allow_html=True,
-    )
-    if done:
-        st.success("Validé pour ce point.")
-    else:
-        all_ok = False
+
+if items and _one_btn:
+    for i, line in enumerate(items):
+        st.markdown(
+            f"<div class='sereno-sst-alert'><strong>Point sécurité {i + 1} / {len(items)}</strong><br/>{line}</div>",
+            unsafe_allow_html=True,
+        )
+    all_ok = all(bool(p_get(f"sst_line_{ut}_{j}")) for j in range(len(items)))
+    if not all_ok:
         if st.button(
-            "✓ Oui — j’ai lu, compris et appliqué ce qui est à ma portée",
-            key=f"sst_yes_{ut}_{i}",
+            "✓ Oui — j’ai lu, compris et appliqué toutes les consignes ci-dessus",
+            key=f"sst_yes_all_{ut}",
             type="primary",
             use_container_width=True,
         ):
             with proto_processing_pause():
-                p_set(key_done, True)
+                for j in range(len(items)):
+                    p_set(f"sst_line_{ut}_{j}", True)
             st.rerun()
+    else:
+        st.success("Toutes les consignes sécurité sont validées.")
+elif items:
+    for i, line in enumerate(items):
+        key_done = f"sst_line_{ut}_{i}"
+        done = bool(p_get(key_done))
+        st.markdown(
+            f"<div class='sereno-sst-alert'><strong>Point sécurité {i + 1} / {len(items)}</strong><br/>{line}</div>",
+            unsafe_allow_html=True,
+        )
+        if done:
+            st.success("Validé pour ce point.")
+        else:
+            all_ok = False
+            if st.button(
+                "✓ Oui — j’ai lu, compris et appliqué ce qui est à ma portée",
+                key=f"sst_yes_{ut}_{i}",
+                type="primary",
+                use_container_width=True,
+            ):
+                with proto_processing_pause():
+                    p_set(key_done, True)
+                st.rerun()
 
 st.divider()
 

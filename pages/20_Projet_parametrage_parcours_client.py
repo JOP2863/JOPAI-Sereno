@@ -18,6 +18,7 @@ from sereno_core.experience_settings import (
     show_brand_suffix_in_titles,
     show_guide_page,
     show_watermark,
+    sst_single_ack_button,
 )
 from sereno_core.jopai_brand_html import page_title_h1_html
 from sereno_core.proto_state import (
@@ -39,6 +40,9 @@ from sereno_core.ui_labels import (
     ui_label_on,
     ui_labels_mode,
 )
+from sereno_core.streamlit_theme import inject_button_zoom_resilience_css
+
+inject_button_zoom_resilience_css()
 
 st.markdown(
     """
@@ -120,6 +124,7 @@ preset_effectif = str(cfg.get("preset") or JOURNEY_PRESET_STANDARD)
 labels_effectif = ui_labels_mode()
 sat_effectif = satisfaction_mode()
 wm0, br0, gd0 = show_watermark(), show_brand_suffix_in_titles(), show_guide_page()
+sst1_0 = sst_single_ack_button()
 
 journey_label = {
     JOURNEY_PRESET_STANDARD: "Standard",
@@ -134,6 +139,7 @@ labels_label = {
 sat_label = "5 étoiles" if sat_effectif == MODE_STARS else "NPS (0–10)"
 extra_label = (
     f"Filigrane {'oui' if wm0 else 'non'} · Titres « by » {'oui' if br0 else 'non'} · Guide {'oui' if gd0 else 'non'}"
+    f" · SST 1 bouton {'oui' if sst1_0 else 'non'}"
 )
 
 st.markdown(
@@ -269,13 +275,23 @@ with row2_l:
 
 with row2_r:
     st.markdown("### Affichage global")
-    st.caption("Filigrane, titres « by JOPAI© », menu Guide.")
+    st.caption("Filigrane, titres « by JOPAI© », menu Guide, validation SST.")
     wm = st.checkbox("Filigrane « site en construction »", value=wm0, key="cfg_wm")
     br = st.checkbox("Titres avec « by JOPAI© SÉRÉNO »", value=br0, key="cfg_br")
     gd = st.checkbox("Page « Guide du parcours » dans le menu client", value=gd0, key="cfg_gd")
+    sst1 = st.checkbox(
+        "SST : un seul bouton pour toutes les consignes (sinon un bouton par consigne)",
+        value=sst1_0,
+        key="cfg_sst1",
+    )
     if st.button("Appliquer l’affichage global", type="primary"):
         ok4, err4 = persist_experience_flags(
-            _REPO, _secrets, watermark=wm, brand_suffix=br, guide_page=gd
+            _REPO,
+            _secrets,
+            watermark=wm,
+            brand_suffix=br,
+            guide_page=gd,
+            sst_single_ack=sst1,
         )
         if not ok4 and _has_gsheet:
             st.warning(f"Écriture **Config** impossible : {err4}")

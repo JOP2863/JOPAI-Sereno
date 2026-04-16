@@ -18,6 +18,9 @@ from sereno_core.cdc_pdf_export import build_cdc_pdf_bytes
 from sereno_core.jopai_brand_html import page_title_h1_html
 from sereno_core.md_chapters import parse_cdc_by_parties
 from sereno_core.streamlit_markdown_book import render_markdown_book_page
+from sereno_core.streamlit_theme import inject_button_zoom_resilience_css
+
+inject_button_zoom_resilience_css()
 
 st.markdown(page_title_h1_html("Cahier des charges"), unsafe_allow_html=True)
 

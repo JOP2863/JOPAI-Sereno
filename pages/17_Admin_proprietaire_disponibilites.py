@@ -28,6 +28,9 @@ from sereno_core.jopai_brand_html import page_title_h1_html
 from sereno_core.proto_state import ensure_demo_seed, p_get
 from sereno_core.sheets_disponibilite_write import append_disponibilite_mois_row, mois_sous_verrouillage_artisan
 from sereno_core.sheets_experts import disponibilite_expert_options, resolve_gsheet_id
+from sereno_core.streamlit_theme import inject_button_zoom_resilience_css
+
+inject_button_zoom_resilience_css()
 
 _COM_KEY = "com_dispo_proprio_17"
 _RECAP_KEY = "sereno_dispo_week_recap_17"

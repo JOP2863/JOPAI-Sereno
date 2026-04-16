@@ -18,6 +18,9 @@ import streamlit as st
 
 from sereno_core.jopai_brand_html import page_title_h1_html
 from sereno_core.reporting_cdc_indicators import INDICATORS, render_reporting_cdc_grid
+from sereno_core.streamlit_theme import inject_button_zoom_resilience_css
+
+inject_button_zoom_resilience_css()
 
 st.markdown(page_title_h1_html("Reporting — indicateurs de pilotage"), unsafe_allow_html=True)
 st.caption(

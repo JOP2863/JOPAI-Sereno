@@ -46,7 +46,7 @@ step_indicator(1, 7)
 if ui_label_on("accueil_reassurance"):
     reassurance(
         "Vous êtes en sécurité ici : pas d’engagement immédiat, aucun paiement réel sur cette démonstration. "
-        "Réponse humaine d’un expert du bâtiment.",
+        "Réponse humaine de notre expert du bâtiment.",
         compact=True,
     )
 

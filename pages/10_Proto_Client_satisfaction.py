@@ -75,7 +75,11 @@ if st.button("Envoyer mon avis", type="primary"):
     elif mode != MODE_NPS and stars <= 0:
         st.error("Merci de choisir une note (1 à 5).")
     else:
-        with proto_processing_pause():
+        _thanks_overlay = (
+            '<span style="font-weight:750;color:#0b2745;">SÉRÉNO</span> vous remercie '
+            "et vous dit à bientôt 🙂"
+        )
+        with proto_processing_pause(busy_card_inner_html=_thanks_overlay):
             if mode == MODE_NPS:
                 p_set("satisfaction_nps", int(nps or 0))
                 p_set("satisfaction_stars", 0)

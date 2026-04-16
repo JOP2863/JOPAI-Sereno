@@ -1,7 +1,7 @@
 """
 Administration · pilote — création / mise à jour d’artisans (onglet **Experts** + photo GCS).
 
-- **Experts** (Google Sheets) : colonnes attendues ``expert_id, prenom, nom, email, telephone, actif, types_autorises, photo, ...``
+- **Experts** (Google Sheets) : colonnes attendues ``expert_id, prenom, nom, email, telephone, actif, types_autorises, photo, essentiel_bio, ...``
 - **Photo** : upload JPG vers GCS au format ``{prefix}/{expert_id}.jpg`` (ex. ``artisan/EXP-001.jpg``)
 - Colonne **photo** dans Sheets : de préférence **chemin objet** (``artisan/EXP-001.jpg``) ou vide ; l’appli charge via le compte de service.
 """
@@ -27,6 +27,9 @@ from sereno_core.jopai_brand_html import page_title_h1_html
 from sereno_core.proto_checklists import URGENCE_LABELS
 from sereno_core.sheets_experts import load_experts_from_sheets, resolve_gsheet_id
 from sereno_core.sheets_experts_write import try_upsert_expert_row
+from sereno_core.streamlit_theme import inject_button_zoom_resilience_css
+
+inject_button_zoom_resilience_css()
 
 _TYPE_CODES = list(URGENCE_LABELS.keys())
 
@@ -132,6 +135,13 @@ with left:
     tel = st.text_input("telephone", value=str(current.get("telephone") or ""), help="Ex. +33600000000")
     actif = st.checkbox("actif", value=True, help="Désactiver = masqué du choix côté client.")
 
+    essentiel_bio = st.text_input(
+        "essentiel_bio",
+        value=str(current.get("essentiel_bio") or ""),
+        max_chars=280,
+        help="Phrase très courte affichée au client sous le nom lors du choix du prestataire.",
+    )
+
     st.subheader("Interventions")
     cur_types = [str(t).strip().upper() for t in (current.get("types") or []) if str(t).strip().upper() in _TYPE_CODES]
     default_types = cur_types if cur_types else list(_TYPE_CODES)
@@ -174,6 +184,7 @@ if save:
             "telephone": tel.strip(),
             "actif": "OUI" if actif else "NON",
             "types_autorises": _types_to_cell_from_multiselect(types_sel),
+            "essentiel_bio": essentiel_bio.strip(),
             "notes_internes": notes.strip(),
             "stripe_connect_account_id": stripe.strip(),
         }

@@ -262,7 +262,7 @@ def notify_expert(
     prio = [p.strip().lower() for p in (priority or notification_priority_from_secrets(secrets)) if str(p).strip()]
     prio = prio or ["sms", "call", "push"]
     eid = str(expert.get("id") or "").strip()
-    name = str(expert.get("nom_affichage") or expert.get("nom") or eid or "l’expert").strip()
+    name = str(expert.get("nom_affichage") or expert.get("nom") or eid or "notre expert").strip()
     tel = normalize_phone_e164(str(expert.get("telephone") or ""))
 
     who = (client_display or "").strip()

@@ -38,7 +38,7 @@ from sereno_core.ui_labels import ui_label_on
 FORFAIT_EUR = 50
 
 proto_page_start(
-    title="Règlement de la session",
+    title="Règlement de la prestation",
     subtitle=f"Montant de la session : **{FORFAIT_EUR} €**.",
 )
 proto_nav_overlay_once("_sereno_overlay_paiement")

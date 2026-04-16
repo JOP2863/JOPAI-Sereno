@@ -384,6 +384,9 @@ def load_experts_from_sheets(
         if not nom_famille and not prenom:
             nom_famille = eid
         nom_affichage = f"{prenom} {nom_famille}".strip() if prenom else nom_famille
+        essentiel_bio = str(
+            _flex_get(nr, "essentiel_bio", "essential_bio", "bio_essentiel", "bio_court") or ""
+        ).strip()
         email_raw = _flex_get(nr, "email", "mail", "courriel")
         email = str(email_raw).strip() if email_raw is not None else ""
         tel_raw = _flex_get(nr, "telephone", "téléphone", "tel", "tél", "phone", "mobile", "portable")
@@ -410,6 +413,7 @@ def load_experts_from_sheets(
                 "telephone": telephone,
                 "types": list(types),
                 "ordre": order,
+                "essentiel_bio": essentiel_bio,
             }
         else:
             m = merged[eid]
@@ -437,6 +441,12 @@ def load_experts_from_sheets(
                 )
             else:
                 m["photo_url"] = ch2 or expert_photo_public_url(eid, secrets)
+            bio_new = str(
+                _flex_get(nr, "essentiel_bio", "essential_bio", "bio_essentiel", "bio_court") or ""
+            ).strip()
+            prev_bio = str(m.get("essentiel_bio") or "").strip()
+            if bio_new and (not prev_bio or len(bio_new) > len(prev_bio)):
+                m["essentiel_bio"] = bio_new
 
     out = list(merged.values())
     out.sort(key=lambda x: int(x.get("ordre", 99)))

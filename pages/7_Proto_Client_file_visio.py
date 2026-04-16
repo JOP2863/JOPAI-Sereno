@@ -28,13 +28,19 @@ from sereno_core.proto_state import (
     sync_session_sheet,
     urgence_display_label,
 )
-from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
+from sereno_core.proto_ui import (
+    proto_page_start,
+    proto_processing_pause,
+    reassurance,
+    step_indicator,
+    success_box,
+)
 from sereno_core.sheets_experts import canonicalize_type_list, coerce_expert_types
 from sereno_core.visio_recording import build_visio_object_prefix, daily_api_key_from_secrets, daily_start_recording
 from sereno_core.ui_labels import ui_label_on
 
 proto_page_start(
-    title="Mise en relation avec un expert",
+    title="Mise en relation avec notre expert",
     subtitle="Nous contactons les professionnels dans un **ordre défini** (priorité) parmi ceux qui couvrent votre type d’urgence.",
 )
 step_indicator(4, 7)
@@ -51,8 +57,8 @@ if journey_sst_active() and not p_get("sst_validated"):
 
 if ui_label_on("file_wait_reassurance"):
     reassurance(
-        "Temps d’attente indicatif : **~1 minute**. "
-        "Un expert vous confirmera la prise en charge avant d’ouvrir la visio."
+        "Temps d’attente indicatif : ~1 minute. "
+        "Notre expert vous confirmera la prise en charge avant d’ouvrir la visio."
     )
 
 artisans: list[dict] = list(p_get("artisans", []))
@@ -65,6 +71,7 @@ if "pick_expert" in st.query_params:
     _pv = (_raw[0] if isinstance(_raw, list) else str(_raw or "")).strip()
     if _pv and any(str(e.get("id") or "").strip() == _pv for e in elig):
         st.session_state["expert_pick_id_mise_en_relation"] = _pv
+        p_set("expert_pick_user_confirmed", True)
         try:
             del st.query_params["pick_expert"]
         except Exception:
@@ -104,6 +111,15 @@ if not elig:
         st.switch_page("pages/4_Proto_Client_accueil.py")
     st.stop()
 
+# Overlay « travaille pour vous » : message équipe tant que plusieurs artisans sans clic « Choisir ».
+_eids_fp = sorted(str(e.get("id") or "").strip() for e in elig if str(e.get("id") or "").strip())
+_elig_fp = "|".join(_eids_fp)
+if str(p_get("_expert_elig_fp") or "") != _elig_fp:
+    p_set("_expert_elig_fp", _elig_fp)
+    p_set("expert_pick_user_confirmed", len(elig) <= 1)
+p_set("expert_pick_required", len(elig) > 1)
+
+
 def _expert_display_name(a: dict) -> str:
     pn = str(a.get("prenom") or "").strip()
     nm = str(a.get("nom") or "").strip()
@@ -125,17 +141,10 @@ def _render_expert_picker(*, elig: list[dict], default_id: str) -> dict:
         """
 <style>
 .sereno-pick-name { font-weight:650;color:#0b2745;line-height:1.25;font-size:0.95rem; }
-.sereno-pick-sub { font-size:0.8rem;color:#334155;margin-top:2px; }
+.sereno-pick-bio { font-size:0.82rem;color:#334155;margin-top:3px;line-height:1.3; }
+.sereno-pick-sub { font-size:0.78rem;color:#475569;margin-top:4px; }
 .sereno-tbl-fit-wrap { width:max-content; max-width:100%; margin:0; }
-.sereno-tbl-fit-hdr { width:max-content; border-collapse:collapse; table-layout:auto; margin:0;
-  border:1px solid #e2e8f0; border-bottom:none; border-radius:8px 8px 0 0; background:#f1f5f9;
-  font-size:0.78rem; color:#0b2745; }
-.sereno-tbl-fit-hdr th { padding:8px 10px; font-weight:650; border-bottom:1px solid #e2e8f0; white-space:nowrap; }
-.sereno-tbl-fit-hdr th:nth-child(1) { text-align:center; }
-.sereno-tbl-fit-hdr th:nth-child(2) { text-align:left; }
-.sereno-tbl-fit-hdr th:nth-child(3) { text-align:right; }
 /* Boutons d’action courts : pas de césure au milieu du mot (ex. « Éditer »). */
-section[data-testid="stMain"] .stButton > button { white-space: nowrap !important; }
 </style>
 """,
         unsafe_allow_html=True,
@@ -159,20 +168,15 @@ section[data-testid="stMain"] .stButton > button { white-space: nowrap !importan
     # Colonne gauche = zone « tableau » ; droite laisse le vide (alignement gauche visuel).
     _tbl_col, _rest = st.columns([0.46, 0.54])
     with _tbl_col:
-        # Poids : texte au plus large utile, action seulement pour aligner avec l’en-tête (bouton en largeur intrinsèque).
+        # Photo + texte (nom, bio courte, priorité) + action ; bouton en largeur intrinsèque.
         _W_PH, _W_TX, _W_BT = 0.14, 0.62, 0.24
-        st.markdown(
-            '<div class="sereno-tbl-fit-wrap"><table class="sereno-tbl-fit-hdr"><thead><tr>'
-            "<th>Photo</th><th>Prestataire</th><th>Action</th>"
-            "</tr></thead></table></div>",
-            unsafe_allow_html=True,
-        )
 
         rows = [e for e in elig if str(e.get("id") or "").strip()]
         for idx, e in enumerate(rows):
             eid = str(e.get("id") or "").strip()
             nm = _expert_display_name(e)
             pr = str(e.get("ordre") or "—")
+            bio = str(e.get("essentiel_bio") or "").strip()
             cimg, ctext, cbtn = st.columns([_W_PH, _W_TX, _W_BT], vertical_alignment="center")
             with cimg:
                 tup = thumbs.get(eid)
@@ -185,9 +189,18 @@ section[data-testid="stMain"] .stButton > button { white-space: nowrap !importan
                         unsafe_allow_html=True,
                     )
             with ctext:
+                bio_blk = (
+                    f'<div class="sereno-pick-bio">{escape(bio)}</div>' if bio else ""
+                )
+                pr_blk = (
+                    f'<div class="sereno-pick-sub">Priorité d’appel n°{escape(pr)}</div>'
+                    if ui_label_on("file_expert_priority_line")
+                    else ""
+                )
                 st.markdown(
                     f'<div class="sereno-pick-name">{escape(nm)}</div>'
-                    f'<div class="sereno-pick-sub">Priorité d’appel n°{escape(pr)}</div>',
+                    f"{bio_blk}"
+                    f"{pr_blk}",
                     unsafe_allow_html=True,
                 )
             with cbtn:
@@ -202,6 +215,7 @@ section[data-testid="stMain"] .stButton > button { white-space: nowrap !importan
                 else:
                     if st.button("Choisir", key=f"pick_expert_btn_{eid}", type="secondary", use_container_width=False):
                         st.session_state[key] = eid
+                        p_set("expert_pick_user_confirmed", True)
                         st.rerun()
             if idx < len(rows) - 1:
                 st.markdown(
@@ -226,7 +240,7 @@ if not default or default.get("id") not in {e.get("id") for e in elig}:
     p_set("assigned_expert", default)
 
 if len(elig) > 1:
-    st.subheader("Choisir votre prestataire")
+    st.subheader("Choisir votre artisan disponible")
     if ui_label_on("file_multi_expert_explain"):
         st.caption(
             "Plusieurs professionnels couvrent votre urgence. Celui affiché en **premier** est le plus prioritaire "
@@ -255,11 +269,21 @@ if assigned.get("id") != p_get("_audit_last_expert_id"):
         }
     )
 
-st.success(
-    f"**{_expert_display_name(assigned)}** est sélectionné pour votre demande "
-    f"({urgence_display_label(ut)}). "
-    f"*Priorité d’appel n°{assigned.get('ordre', '—')} dans la file pour ce type d’urgence.*"
+_disp = _expert_display_name(assigned)
+_urg = urgence_display_label(ut)
+_ok_html = (
+    f"<strong>{escape(_disp)}</strong> est sélectionné pour votre demande "
+    f"({escape(_urg)})."
 )
+if len(elig) == 1:
+    _bio_one = str(assigned.get("essentiel_bio") or "").strip()
+    if _bio_one:
+        _ok_html += (
+            "<div style='margin-top:0.65rem;padding-top:0.55rem;border-top:1px solid rgba(22,101,52,0.28);"
+            "font-size:0.92rem;line-height:1.42;font-weight:500;color:#0f172a;'>"
+            f"{escape(_bio_one)}</div>"
+        )
+success_box(_ok_html)
 
 if st.button("Ouvrir la salle de visio", type="primary"):
     with proto_processing_pause():

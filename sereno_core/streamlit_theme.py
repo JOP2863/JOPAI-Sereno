@@ -13,50 +13,126 @@ from sereno_core import design_tokens as dt
 from sereno_core.jopai_brand_html import filigrane_second_line_html, footer_brand_block_html, sidebar_brand_line_html
 from sereno_core.experience_settings import show_watermark
 
+# Zoom + colonnes flex Streamlit : évite coupure « Édit » / « er » (colonne trop étroite + wrap).
+_BTN_ZOOM_RESILIENCE_CSS = """
+        /* Colonne qui contient un bouton : ne pas la comprimer (flex défaut min-width:0) */
+        .stApp section[data-testid="stMain"] [data-testid="column"]:has(.stButton),
+        .stApp [data-testid="stSidebar"] [data-testid="column"]:has(.stButton) {
+            flex: 0 0 auto !important;
+            width: auto !important;
+            min-width: max-content !important;
+            max-width: none !important;
+        }
+        .stApp section[data-testid="stMain"] .stButton,
+        .stApp [data-testid="stSidebar"] .stButton {
+            overflow: visible !important;
+            width: max-content !important;
+            max-width: 100% !important;
+            min-width: min-content !important;
+        }
+        .stApp section[data-testid="stMain"] .stButton > button,
+        .stApp [data-testid="stSidebar"] .stButton > button {
+            box-sizing: border-box !important;
+            height: auto !important;
+            min-height: 2.75em !important;
+            min-width: max-content !important;
+            padding: 0.5em 1.2em !important;
+            overflow: visible !important;
+            white-space: nowrap !important;
+            word-break: normal !important;
+            overflow-wrap: normal !important;
+            hyphens: none !important;
+        }
+        .stApp section[data-testid="stMain"] .stButton > button *,
+        .stApp [data-testid="stSidebar"] .stButton > button * {
+            white-space: nowrap !important;
+            word-break: normal !important;
+            overflow-wrap: normal !important;
+            hyphens: none !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            line-height: 1.35 !important;
+        }
+        .stApp section[data-testid="stMain"] div[data-testid="stFormSubmitButton"] button,
+        .stApp [data-testid="stSidebar"] div[data-testid="stFormSubmitButton"] button {
+            box-sizing: border-box !important;
+            height: auto !important;
+            min-height: 2.75em !important;
+            min-width: max-content !important;
+            padding: 0.5em 1.05em !important;
+            overflow: visible !important;
+            white-space: nowrap !important;
+        }
+        .stApp section[data-testid="stMain"] div[data-testid="stFormSubmitButton"] button *,
+        .stApp [data-testid="stSidebar"] div[data-testid="stFormSubmitButton"] button * {
+            white-space: nowrap !important;
+        }
+"""
+
+
+def inject_button_zoom_resilience_css() -> None:
+    """À appeler sur les pages sans ``apply_global_styles`` / ``inject_sereno_prototype_css`` (ex. admin)."""
+    if st.session_state.get("_sereno_btn_zoom_css_v2"):
+        return
+    st.session_state["_sereno_btn_zoom_css_v2"] = True
+    st.markdown(
+        f"<style>{_BTN_ZOOM_RESILIENCE_CSS}</style>",
+        unsafe_allow_html=True,
+    )
+
 
 def _busy_overlay_card_inner_html(*, use_assigned_expert: bool = True) -> str:
     """Ligne centrale de la carte overlay : **prénom** + photo ronde si disponibles (sinon message générique)."""
     from html import escape
 
-    if use_assigned_expert:
-        try:
-            from pathlib import Path
+    _team_msg = "L'équipe SÉRÉNO travaille pour vous…"
 
-            from sereno_core.proto_state import p_get
+    if not use_assigned_expert:
+        return escape(_team_msg)
 
-            ex = p_get("assigned_expert") or {}
-            prenom = str(ex.get("prenom") or "").strip()
-            eid = str(ex.get("id") or "").strip()
-            photo = ""
-            if eid:
-                try:
-                    root = Path(__file__).resolve().parent.parent
-                    sec = dict(st.secrets)
-                    from sereno_core.gcs_artisan_photo import expert_photo_data_url
+    try:
+        from pathlib import Path
 
-                    photo = expert_photo_data_url(root, sec, expert_id=eid) or ""
-                except Exception:
-                    photo = ""
-            if not photo:
-                photo = str(ex.get("photo_url") or "").strip()
-            # URL console « authentifiée » : ne fonctionne pas en balise <img> pour les clients.
-            if "storage.cloud.google.com" in photo:
+        from sereno_core.proto_state import p_get
+
+        pick_required = bool(p_get("expert_pick_required"))
+        user_ok = bool(p_get("expert_pick_user_confirmed"))
+        if pick_required and not user_ok:
+            return escape(_team_msg)
+
+        ex = p_get("assigned_expert") or {}
+        prenom = str(ex.get("prenom") or "").strip()
+        eid = str(ex.get("id") or "").strip()
+        photo = ""
+        if eid:
+            try:
+                root = Path(__file__).resolve().parent.parent
+                sec = dict(st.secrets)
+                from sereno_core.gcs_artisan_photo import expert_photo_data_url
+
+                photo = expert_photo_data_url(root, sec, expert_id=eid) or ""
+            except Exception:
                 photo = ""
-            img = ""
-            if photo:
-                img = (
-                    "<div style='margin:0 auto 10px;width:44px;height:44px;border-radius:50%;overflow:hidden;"
-                    "border:2px solid rgba(0,51,102,0.15);'>"
-                    f"<img src='{escape(photo)}' alt='' "
-                    "style='width:100%;height:100%;object-fit:cover;display:block;'/>"
-                    "</div>"
-                )
-            if prenom:
-                return img + f"<strong>{escape(prenom)}</strong> travaille pour vous…"
-            return img + escape("Votre artisan SÉRÉNO travaille pour vous…")
-        except Exception:
-            pass
-    return escape("Votre artisan SÉRÉNO travaille pour vous…")
+        if not photo:
+            photo = str(ex.get("photo_url") or "").strip()
+        # URL console « authentifiée » : ne fonctionne pas en balise <img> pour les clients.
+        if "storage.cloud.google.com" in photo:
+            photo = ""
+        img = ""
+        if photo:
+            img = (
+                "<div style='margin:0 auto 10px;width:44px;height:44px;border-radius:50%;overflow:hidden;"
+                "border:2px solid rgba(0,51,102,0.15);'>"
+                f"<img src='{escape(photo)}' alt='' "
+                "style='width:100%;height:100%;object-fit:cover;display:block;'/>"
+                "</div>"
+            )
+        if prenom:
+            return img + f"<strong>{escape(prenom)}</strong> travaille pour vous…"
+        return img + escape(_team_msg)
+    except Exception:
+        pass
+    return escape(_team_msg)
 
 _LOGO_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 
@@ -385,7 +461,7 @@ def inject_sereno_prototype_css(*, busy_overlay_use_assigned_expert: bool = True
         }}
 
         section.main button[kind="primary"] {{
-            min-height: {dt.BTN_MIN_HEIGHT_PX}px;
+            min-height: max(2.75em, 48px);
             border-radius: {dt.RADIUS_BTN} !important;
             font-weight: 650 !important;
             font-size: 1.05rem !important;
@@ -393,18 +469,24 @@ def inject_sereno_prototype_css(*, busy_overlay_use_assigned_expert: bool = True
             border-color: {dt.COLOR_PRIMARY} !important;
             color: #ffffff !important;
             font-family: {dt.FONT_UI} !important;
+            height: auto !important;
+            padding: 0.5em 1.1em !important;
+            overflow: visible !important;
         }}
         section.main button[kind="primary"]:hover {{
             background-color: {dt.COLOR_PRIMARY_HOVER} !important;
             border-color: {dt.COLOR_PRIMARY_HOVER} !important;
         }}
         section.main button[kind="secondary"] {{
-            min-height: 48px;
+            min-height: 2.75em;
             border-radius: {dt.RADIUS_BTN} !important;
             font-weight: 600 !important;
             font-family: {dt.FONT_UI} !important;
             border-color: {dt.COLOR_BLEU_ACIER} !important;
             color: {dt.COLOR_BLEU_ACIER} !important;
+            height: auto !important;
+            padding: 0.5em 1.1em !important;
+            overflow: visible !important;
         }}
 
         @keyframes sereno-pulse-glow {{
@@ -443,11 +525,19 @@ def inject_sereno_prototype_css(*, busy_overlay_use_assigned_expert: bool = True
             width: 100% !important;
         }}
 
-        /* Étoiles satisfaction : alignées à gauche, serrées, non sélectionnées plus lisibles */
+        /* Étoiles satisfaction : une seule ligne (mobile inclus), défilement horizontal si besoin */
         section.main [data-testid="stHorizontalBlock"]:has(div[class*="st-key-star_pick_1"]) {{
             justify-content: flex-start !important;
-            width: fit-content !important;
+            flex-wrap: nowrap !important;
+            width: max-content !important;
             max-width: 100% !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }}
+        section.main [data-testid="stHorizontalBlock"]:has(div[class*="st-key-star_pick_1"]) > div[data-testid="column"] {{
+            flex: 0 0 auto !important;
+            width: auto !important;
+            min-width: 0 !important;
         }}
         div[class*="st-key-star_pick_"] button {{
             font-size: 1.85rem !important;
@@ -471,6 +561,13 @@ def inject_sereno_prototype_css(*, busy_overlay_use_assigned_expert: bool = True
         div[class*="st-key-star_pick_"] button p {{
             font-size: 1.85rem !important;
             line-height: 1 !important;
+        }}
+        @media (max-width: 520px) {{
+            div[class*="st-key-star_pick_"] button,
+            div[class*="st-key-star_pick_"] button p {{
+                font-size: 1.48rem !important;
+                min-height: 2.15rem !important;
+            }}
         }}
 
         /* NPS 0–10 : une ligne, code couleur détracteurs / passifs / promoteurs */
@@ -571,13 +668,15 @@ def inject_sereno_prototype_css(*, busy_overlay_use_assigned_expert: bool = True
             text-align: center;
             max-width: 92vw;
         }}
+        {_BTN_ZOOM_RESILIENCE_CSS}
         </style>
-        <div class="sereno-busy-overlay" aria-live="polite" aria-busy="true">
+        <div class="sereno-busy-overlay sereno-busy-overlay--default" aria-live="polite" aria-busy="true">
             <div class="sereno-busy-card">{busy_inner}</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
+    st.session_state["_sereno_btn_zoom_css_v2"] = True
 
 
 def apply_global_styles() -> None:
@@ -735,6 +834,7 @@ def apply_global_styles() -> None:
             margin-left: 0;
             color: #0d9488;
         }}
+        {_BTN_ZOOM_RESILIENCE_CSS}
         </style>
         <div class="sereno-brand-topbar" aria-hidden="true"></div>
         {"<div class=\"jopai-construction-filigrane\" aria-hidden=\"true\">"
@@ -750,3 +850,4 @@ def apply_global_styles() -> None:
         ),
         unsafe_allow_html=True,
     )
+    st.session_state["_sereno_btn_zoom_css_v2"] = True

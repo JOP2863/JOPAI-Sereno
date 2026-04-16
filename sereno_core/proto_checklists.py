@@ -26,7 +26,7 @@ CHECKLISTS: dict[str, list[str]] = {
     "SERR": [
         "Ne pas forcer une serrure si quelqu’un est en danger à l’intérieur : composer les secours.",
         "Vérifier qu’aucune issue de secours n’est disponible avant toute dégradation.",
-        "Restez joignable : l’expert pourra vous guider pas à pas.",
+        "Restez joignable : notre expert pourra vous guider pas à pas.",
     ],
 }
 

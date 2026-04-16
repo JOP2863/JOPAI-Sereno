@@ -49,7 +49,7 @@ if not ut:
 if ui_label_on("infos_urgence_reassurance"):
     reassurance(
         f"Urgence sélectionnée : **{urgence_display_label(ut)}**. "
-        "Vous pourrez préciser le détail avec l’expert en visio."
+        "Vous pourrez préciser le détail avec notre expert en visio."
     )
 
 _accent, _bg, _text = _URG_BAND.get(ut, ("#003366", "#f4f7f9", "#003366"))

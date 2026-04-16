@@ -119,6 +119,9 @@ def new_session_id() -> str:
     sid = str(uuid4())[:8].upper()
     p_set("session_id", sid)
     p_set("_audit_last_expert_id", None)
+    p_set("_expert_elig_fp", "")
+    p_set("expert_pick_user_confirmed", False)
+    p_set("expert_pick_required", False)
     # Si une IP a déjà été captée au chargement de page (proto_ui), la persister dès qu’un session_id existe.
     try:
         ip = str(p_get("user_ip") or "").strip()
@@ -390,6 +393,9 @@ def clear_client_branch_after_urgence_change() -> None:
     drop_keys = (
         "assigned_expert",
         "_audit_last_expert_id",
+        "_expert_elig_fp",
+        "expert_pick_user_confirmed",
+        "expert_pick_required",
         "sst_validated",
         "_sst_mark_complete",
         "visio_done",
@@ -406,6 +412,8 @@ def clear_client_branch_after_urgence_change() -> None:
         kk = _k(name)
         if kk in st.session_state:
             del st.session_state[kk]
+    if "expert_pick_id_mise_en_relation" in st.session_state:
+        del st.session_state["expert_pick_id_mise_en_relation"]
     for key in list(st.session_state.keys()):
         if isinstance(key, str) and key.startswith(_PREFIX + "sst_line_"):
             del st.session_state[key]

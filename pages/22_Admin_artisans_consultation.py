@@ -18,6 +18,9 @@ from sereno_core.gcs_artisan_photo import download_artisan_photo_bytes
 from sereno_core.jopai_brand_html import page_title_h1_html
 from sereno_core.proto_checklists import URGENCE_LABELS
 from sereno_core.sheets_experts import load_experts_from_sheets, resolve_gsheet_id
+from sereno_core.streamlit_theme import inject_button_zoom_resilience_css
+
+inject_button_zoom_resilience_css()
 
 st.markdown(page_title_h1_html("Administration · Artisans (liste)"), unsafe_allow_html=True)
 st.caption(
@@ -68,6 +71,7 @@ st.markdown(
 .sereno-admin-list-nm { font-weight:650;color:#0b2745;line-height:1.2;font-size:0.92rem; }
 .sereno-admin-list-ex { font-size:0.78rem;color:#334155;line-height:1.25; }
 .sereno-admin-list-tel { font-size:0.78rem;color:#0f172a;margin-top:2px; }
+.sereno-admin-list-bio { font-size:0.74rem;color:#475569;line-height:1.3;max-width:14rem; }
 .sereno-tbl-fit-wrap { width:max-content; max-width:100%; margin:0; }
 .sereno-tbl-fit-hdr { width:max-content; border-collapse:collapse; table-layout:auto; margin:0;
   border:1px solid #e2e8f0; border-bottom:none; border-radius:8px 8px 0 0; background:#f1f5f9;
@@ -76,19 +80,30 @@ st.markdown(
 .sereno-tbl-fit-hdr th:nth-child(1) { text-align:center; }
 .sereno-tbl-fit-hdr th:nth-child(2) { text-align:left; }
 .sereno-tbl-fit-hdr th:nth-child(3) { text-align:left; }
-.sereno-tbl-fit-hdr th:nth-child(4) { text-align:right; }
-section[data-testid="stMain"] .stButton > button { white-space: nowrap !important; }
+.sereno-tbl-fit-hdr th:nth-child(4) { text-align:left; }
+.sereno-tbl-fit-hdr th:nth-child(5) { text-align:right; }
+/* Dernière colonne (Action) : largeur minimale pour « Éditer » au zoom (uniquement sur cette page). */
+section[data-testid="stMain"] [data-testid="stHorizontalBlock"]:has(button[kind="secondary"]) [data-testid="column"]:last-child {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 5.75rem !important;
+  max-width: none !important;
+}
+section[data-testid="stMain"] [data-testid="stHorizontalBlock"]:has(button[kind="secondary"]) .stButton > button {
+  white-space: nowrap !important;
+  min-width: max-content !important;
+}
 </style>
 """,
     unsafe_allow_html=True,
 )
 
-_W_PH, _W_NA, _W_ME, _W_AC = 0.11, 0.20, 0.54, 0.15
+_W_PH, _W_NA, _W_ME, _W_BIO, _W_AC = 0.09, 0.16, 0.24, 0.27, 0.24
 _tbl_col, _rest = st.columns([0.52, 0.48])
 with _tbl_col:
     st.markdown(
         '<div class="sereno-tbl-fit-wrap"><table class="sereno-tbl-fit-hdr"><thead><tr>'
-        "<th>Photo</th><th>Artisan</th><th>Expertises · Téléphone</th><th>Action</th>"
+        "<th>Photo</th><th>Artisan</th><th>Expertises · Téléphone</th><th>Bio</th><th>Action</th>"
         "</tr></thead></table></div>",
         unsafe_allow_html=True,
     )
@@ -101,9 +116,10 @@ with _tbl_col:
         display = (f"{pn} {nm}".strip() if pn and nm else str(e.get("nom_affichage") or nm or pn or eid)).strip()
         tel = str(e.get("telephone") or "").strip() or "—"
         ex_line = _types_line_html(e.get("types"))
+        bio_txt = str(e.get("essentiel_bio") or "").strip()
 
-        cimg, cname, cmeta, cact = st.columns(
-            [_W_PH, _W_NA, _W_ME, _W_AC],
+        cimg, cname, cmeta, cbio, cact = st.columns(
+            [_W_PH, _W_NA, _W_ME, _W_BIO, _W_AC],
             vertical_alignment="center",
         )
         with cimg:
@@ -124,8 +140,20 @@ with _tbl_col:
                 f'<div class="sereno-admin-list-tel">{escape(tel)}</div>',
                 unsafe_allow_html=True,
             )
+        with cbio:
+            if bio_txt:
+                st.markdown(
+                    f'<div class="sereno-admin-list-bio">{escape(bio_txt)}</div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    '<div class="sereno-admin-list-bio" style="opacity:0.4">—</div>',
+                    unsafe_allow_html=True,
+                )
         with cact:
-            if st.button("Éditer", key=f"admin_list_edit_{eid}", use_container_width=False):
+            # U+2060 (mot insécable invisible) évite une coupure « Édit » / « er » si la colonne est trop étroite.
+            if st.button("Édit\u2060er", key=f"admin_list_edit_{eid}", use_container_width=False):
                 st.session_state["admin_artisans_edit_id"] = eid
                 st.switch_page("pages/21_Admin_artisans.py")
         if idx < len(rows) - 1:

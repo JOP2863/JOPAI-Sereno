@@ -25,6 +25,9 @@ from sereno_core.proto_ui import proto_processing_pause
 from sereno_core.jopai_brand_html import page_title_h1_html
 from sereno_core.vertex_iam_hints import markdown_vertex_model_not_found, markdown_vertex_predict_denied
 from sereno_core.vertex_media_summary import summarize_gcs_media_with_vertex, upload_bytes_to_gcs
+from sereno_core.streamlit_theme import inject_button_zoom_resilience_css
+
+inject_button_zoom_resilience_css()
 
 from sereno_core.gcp_credentials import (
     credentials_for_gcp_clients,
