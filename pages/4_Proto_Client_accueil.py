@@ -53,10 +53,16 @@ if ui_label_on("accueil_reassurance"):
 st.markdown(
     """
 <style>
-/* Accueil urgence : boutons pleine largeur du bloc, hauteur homogène */
-div.sereno-urgence-buttons button[data-testid="baseButton-primary"] {
+/* Accueil urgence : boutons même largeur (plein bloc) — !important au-dessus du thème zoom boutons */
+div.sereno-urgence-buttons .stButton,
+div.sereno-urgence-buttons .stButton > button {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+}
+div.sereno-urgence-buttons .stButton > button {
     min-height: 2.75rem;
-    width: 100%;
 }
 </style>
 """,

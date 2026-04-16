@@ -14,21 +14,18 @@ from sereno_core.jopai_brand_html import filigrane_second_line_html, footer_bran
 from sereno_core.experience_settings import show_watermark
 
 # Zoom + colonnes flex Streamlit : évite coupure « Édit » / « er » (colonne trop étroite + wrap).
+# Ne pas forcer flex:0 / width:max-content sur la colonne ni le wrapper .stButton : ça casse
+# ``st.columns([0.68, 0.32])`` + ``use_container_width=True`` (ex. accueil urgence).
 _BTN_ZOOM_RESILIENCE_CSS = """
-        /* Colonne qui contient un bouton : ne pas la comprimer (flex défaut min-width:0) */
+        /* Colonne avec bouton : plancher largeur contenu (sans annuler le flex des ratios Streamlit). */
         .stApp section[data-testid="stMain"] [data-testid="column"]:has(.stButton),
         .stApp [data-testid="stSidebar"] [data-testid="column"]:has(.stButton) {
-            flex: 0 0 auto !important;
-            width: auto !important;
             min-width: max-content !important;
-            max-width: none !important;
         }
         .stApp section[data-testid="stMain"] .stButton,
         .stApp [data-testid="stSidebar"] .stButton {
             overflow: visible !important;
-            width: max-content !important;
             max-width: 100% !important;
-            min-width: min-content !important;
         }
         .stApp section[data-testid="stMain"] .stButton > button,
         .stApp [data-testid="stSidebar"] .stButton > button {
