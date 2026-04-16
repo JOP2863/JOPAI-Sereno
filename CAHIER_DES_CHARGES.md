@@ -1,7 +1,7 @@
 # Cahier des charges — SÉRÉNO (JOPAI BTP)
 
 **Document :** spécification produit et technique — prototype / pilote.  
-**Version :** 1.34 (SST : validation **une fois pour toutes** paramétrable **Config** ; file visio : bio dans le bandeau vert si un seul artisan).  
+**Version :** 1.35 (thème Streamlit : **zoom** boutons + liste admin **Bio** ; libellés **Config** / priorité d’appel ; carnet d’échange à jour).  
 **Classification des sections :** Partie 1 — contexte & business · Partie 2 — fonctionnel · Partie 3 — technique · **Partie 4 — avancements** (idée → pilote → produit).
 
 **Comment lire ce cahier :**
@@ -635,7 +635,7 @@ EXP-001	Dupont Jean	jean.dupont@example.com	+33600000000	OUI	EAU;ELEC;CHAUFF	Pil
 
 **Photo (pilote Streamlit) :** l’application charge l’image depuis **Google Cloud Storage** au chemin **`{prefix}/{expert_id}.jpg`** (compte de service), en essayant aussi **`.JPG` / `.jpeg`** si besoin. Dans la feuille, la colonne **`photo`** peut contenir ce **chemin objet** (ex. `artisan/EXP-001.jpg`), rester **vide**, ou une **URL absolue** en **https://** (ex. lien **storage.googleapis.com** vers l’objet) : cette dernière forme est notamment utilisée pour les **vignettes** de la page **Administration · Artisans (liste)** sans relire GCS côté serveur ; **éviter** les URLs console **storage.cloud.google.com** (souvent inutilisables dans une balise image navigateur).
 
-**Texte court côté client (`essentiel_bio`) :** phrase optionnelle (quelques mots) saisie en fiche **Administration · Artisans** ; affichée sous le nom du prestataire sur l’écran **choix du prestataire** (file / visio), avec la **priorité d’appel** en dessous. Les classeurs existants peuvent ajouter la colonne **`essentiel_bio`** manuellement ou via **`migrate_google_sheet_schema.py`** / ré-init ciblée.
+**Texte court côté client (`essentiel_bio`) :** phrase optionnelle (quelques mots) saisie en fiche **Administration · Artisans** ; affichée sous le nom du prestataire sur l’écran **choix de l’artisan** (file / visio), avec la **priorité d’appel** en dessous (masquable en **libellés minimalistes** via la clé **`file_expert_priority_line`** dans **Config** / paramétrage). La **liste compacte** artisans (**page 22**) affiche aussi une colonne **Bio**. Les classeurs existants peuvent ajouter la colonne **`essentiel_bio`** manuellement ou via **`migrate_google_sheet_schema.py`** / ré-init ciblée.
 
 **Un artisan, plusieurs corps de métier :** **une seule ligne** par `expert_id` (identifiant unique). Renseigner tous les types dans **`types_autorises`**, codes séparés par **`;`** (ex. `EAU;GAZ;CHAUFF`). **Ne pas** dupliquer le même `expert_id` sur plusieurs lignes : cela casserait l’unicité et compliquerait file / sessions. Si un jour une **normalisation** est nécessaire, prévoir une feuille **`Expert_Types`** (`expert_id`, `type_code`) — une ligne par couple — en complément d’**une** ligne maîtresse dans `Experts`.
 
