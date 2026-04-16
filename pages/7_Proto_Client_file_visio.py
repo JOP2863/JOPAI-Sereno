@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import re
 import sys
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from html import escape
 from pathlib import Path
 
@@ -282,7 +282,7 @@ if st.button("Ouvrir la salle de visio", type="primary"):
         except Exception:
             _integrated = ""
         _room_url = _integrated or _jitsi
-        _debut = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        _debut = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         log_event("visio_debut", session_id=p_get("session_id"))
         sync_session_sheet(
             {

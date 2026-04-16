@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 # Carte de test Stripe (succès) — aucun encaissement réel hors Stripe ; ici pilote 100 % local.
@@ -45,7 +45,7 @@ def validate_card_fields(number: str, expiry_mm_yy: str, cvc: str) -> tuple[bool
     mm, yy = int(m.group(1)), int(m.group(2))
     if mm < 1 or mm > 12:
         return False, "Mois invalide."
-    now = datetime.now(UTC)
+    now = datetime.now(timezone.utc)
     exp_year = 2000 + yy
     if (exp_year, mm) < (now.year, now.month):
         return False, "La carte semble expirée."

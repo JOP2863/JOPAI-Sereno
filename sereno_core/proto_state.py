@@ -5,7 +5,7 @@ Préfixe `sereno_proto_` pour éviter les collisions.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -132,7 +132,7 @@ def new_session_id() -> str:
 def log_event(action: str, **fields: Any) -> None:
     ensure_demo_seed()
     ev = {
-        "ts": datetime.now(UTC).isoformat(timespec="seconds"),
+        "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "action": action,
         **fields,
     }

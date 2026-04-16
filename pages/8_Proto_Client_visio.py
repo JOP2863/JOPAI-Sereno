@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import re
 import sys
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 _REPO = Path(__file__).resolve().parent.parent
@@ -154,7 +154,7 @@ with c2:
             p_set("visio_demo_torch", torch)
             log_event("visio_fin", session_id=p_get("session_id"))
             _room_url = (_integrated or jitsi_url).strip()
-            _fin = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+            _fin = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             sync_session_sheet(
                 {
                     "fin_visio": _fin,
