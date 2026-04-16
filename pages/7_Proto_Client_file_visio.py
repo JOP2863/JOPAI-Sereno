@@ -261,11 +261,6 @@ st.success(
     f"*Priorité d’appel n°{assigned.get('ordre', '—')} dans la file pour ce type d’urgence.*"
 )
 
-if ui_label_on("file_order_expander"):
-    with st.expander("Voir l’ordre d’appel des experts (démo)"):
-        for a in elig:
-            st.write(f"{a.get('ordre', '—')}. **{_expert_display_name(a)}** — {', '.join(a.get('types', []))}")
-
 if st.button("Ouvrir la salle de visio", type="primary"):
     with proto_processing_pause():
         _sid = str(p_get("session_id") or "")
