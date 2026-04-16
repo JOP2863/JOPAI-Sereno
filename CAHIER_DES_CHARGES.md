@@ -812,6 +812,13 @@ Même barre d’outils (recherche, déplier / replier) ; le CDC utilise en plus 
 - **Compte-rendu d’intervention (produit cible)** : après session, génération d’un **PDF de synthèse** (parcours, synthèse visio, pièces jointes) — **à concevoir** ; lien placeholder dans le mail de contact pilote.
 - **Mise en page Streamlit** : largeur du bloc principal **~70 %** pour **toutes** les sections (`apply_global_styles`) ; logo SÉRÉNO en **haut de barre latérale** si disponible (dossier `logo/` ou GCS).
 
+### 3.9.5 Thème Streamlit, boutons et zoom navigateur
+
+- **Fichiers :** `sereno_core/streamlit_theme.py` (`apply_global_styles`, `inject_sereno_prototype_css`, constante **`_BTN_ZOOM_RESILIENCE_CSS`**, helper **`inject_button_zoom_resilience_css()`**).
+- **Objectif :** éviter que le **texte des boutons** « déborde » ou se **coupe** (ex. colonnes **flex** Streamlit trop étroites, zoom navigateur) : `min-height` / **padding en `em`**, **`height: auto`**, **`overflow: visible`**, colonnes contenant un **`.stButton`** avec **`min-width: max-content`**, libellé interne en **`white-space: nowrap`**.
+- **Chargement :** le bloc zoom est **fusionné** dans les styles globaux et prototype ; les pages **Projet** qui n’injectent pas ces styles appellent **`inject_button_zoom_resilience_css()`** (drapeau session **`_sereno_btn_zoom_css_v2`** pour éviter les doublons inutiles).
+- **Exemple ciblé (liste artisans admin) :** styles locaux sur la page **`22_Admin_artisans_consultation.py`** (colonne **Action** + libellé bouton avec **U+2060** si besoin pour empêcher une coupure au milieu du mot).
+
 ---
 
 # Partie 4 — Avancements : de l’idée au produit en passant par le pilote
@@ -879,6 +886,7 @@ Pour le **détail ligne à ligne**, le **mini-glossaire** et les **questions / r
 
 | Version | Date | Auteur | Résumé |
 |---------|------|--------|--------|
+| 1.35 | 2026-04-16 | JOPAI + assistant | **§ 3.9.5** : thème **zoom** boutons (`_BTN_ZOOM_RESILIENCE_CSS`, colonnes `:has(.stButton)`). **Liste artisans (22)** : colonne **Bio**, colonne **Action** élargie, correctif libellé **Éditer**. **Libellés** : **`file_expert_priority_line`** (priorité d’appel masquable en minimal). **Overlay file** : message **équipe** tant que le choix multi-artisans n’est pas confirmé. **Paiement** : titre **prestation** ; autres libellés **notre expert** / **artisan disponible** (cf. 1.33). |
 | 1.34 | 2026-04-16 | JOPAI + assistant | **SST** : option **Config** `SERENO_SST_SINGLE_ACK_BUTTON` (défaut **true**) — un bouton valide toutes les consignes ; sinon un bouton par point. **Paramétrage** : case sous **Affichage global**. **File / visio** : si **un seul** artisan, **`essentiel_bio`** dans le **bandeau vert** (bloc succès) sous la ligne de sélection. |
 | 1.33 | 2026-04-16 | JOPAI + assistant | Parcours client : libellés **notre expert** (ton plus personnel) ; file **visio** : pas d’en-tête HTML « Photo / Prestataire / Action », **~1 minute** sans emphase gras, **priorité d’appel** surtout dans la liste, message de succès épuré. **Experts** : colonne **`essentiel_bio`** (schéma graine + fiche admin + lecture liste) ; **satisfaction** : overlay de remerciement **SÉRÉNO** + **étoiles** tenues sur une ligne mobile (CSS). |
 | 1.32 | 2026-04-15 | JOPAI + assistant | **Experts prototype** : rechargement Sheets à chaque page (plus de vivier figé sur ``_demo_seeded``) ; **types** via ``coerce_expert_types`` ; page file **visio** : code urgence normalisé. **Photo** : URL **https** dans la colonne **photo** pour liste admin + chargement léger sans GCS en session ; fiche admin conserve GCS + data-URL si besoin. **Règle UX Cursor** : tableaux admin étroits / colonnes alignées. |

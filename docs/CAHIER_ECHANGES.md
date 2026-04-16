@@ -15,6 +15,16 @@ Complément du **cahier des charges** officiel (`CAHIER_DES_CHARGES.md`). À ten
 
 ## 2026 — Historique
 
+### 2026-04-16 — UX prototype + admin : libellés, bio, boutons au zoom, SST, overlay
+
+- **Contexte :** affiner le **ton** (« notre expert », **équipe** tant que le choix n’est pas confirmé), alléger la **file** (sans en-tête tableau factice), afficher **`essentiel_bio`** côté client et en **liste admin**, éviter les **coupures de libellés** sur boutons au **zoom**, clarifier **paiement** (« prestation »), proposer une **validation SST** en un clic paramétrable.
+- **Décision :**
+  1. **Config / libellés** : clé **`SERENO_SST_SINGLE_ACK_BUTTON`** + case **Affichage global** ; **`file_expert_priority_line`** pour masquer la ligne « priorité d’appel » en **minimal** ; graine **`essentiel_bio`** dans **`sheets_schema`**.
+  2. **Thème** : **`sereno_core/streamlit_theme.py`** — CSS **`_BTN_ZOOM_RESILIENCE_CSS`** (colonnes flex + boutons), **`inject_button_zoom_resilience_css()`** sur les pages **Projet** sans injection prototype globale.
+  3. **Liste artisans (22)** : colonne **Bio**, poids colonnes, styles **Action** ; secours **U+2060** sur le libellé **Éditer** si coupure résiduelle.
+  4. **Satisfaction / file** : overlay de remerciement ; **étoiles** une ligne sur mobile ; bio **dans le bandeau vert** si un seul artisan.
+- **Impact :** technique (`streamlit_theme`, `experience_settings`, `ui_labels`, pages **6–10**, **20–22**, **7**, **9**) ; **CDC v1.35** + **§ 3.9.5** ; règle **`.cursor/rules/sereno-streamlit-ux.mdc`** (boutons / zoom).
+
 ### 2026-04-15 — Experts : session figée, photos liste admin, filtre urgence
 
 - **Contexte :** après optimisation perf, la **liste admin** artisans n’affichait plus les vignettes (bucket souvent privé) ; certains utilisateurs voyaient **« Aucun expert référencé »** sur la file / visio alors que l’onglet **Experts** était rempli.
