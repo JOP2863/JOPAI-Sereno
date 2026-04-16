@@ -23,7 +23,7 @@ from sereno_core.proto_state import (
     sync_session_sheet,
     urgence_display_label,
 )
-from sereno_core.experience_settings import sst_single_ack_button
+from sereno_core.sst_ack_settings import sst_single_ack_button
 from sereno_core.proto_ui import proto_page_start, proto_processing_pause, reassurance, step_indicator
 from sereno_core.ui_labels import ui_label_on
 

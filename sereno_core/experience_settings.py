@@ -9,11 +9,11 @@ from pathlib import Path
 import streamlit as st
 
 from sereno_core.config_kv import config_upsert_pairs, invalidate_config_kv_cache, read_config_kv_cached, resolve_gsheet_id_from_secrets
+from sereno_core.sst_ack_settings import KEY_SST_SINGLE_ACK_BUTTON, sst_single_ack_button
 
 KEY_SHOW_WATERMARK = "SERENO_UI_SHOW_WATERMARK"
 KEY_SHOW_BRAND_SUFFIX = "SERENO_UI_SHOW_BRAND_SUFFIX"
 KEY_SHOW_GUIDE_PAGE = "SERENO_UI_SHOW_GUIDE_PAGE"
-KEY_SST_SINGLE_ACK_BUTTON = "SERENO_SST_SINGLE_ACK_BUTTON"
 
 
 def _as_bool(v: str) -> bool:
@@ -48,12 +48,6 @@ def show_guide_page() -> bool:
     """Page 'Guide du parcours' visible dans le menu client (défaut : False)."""
     kv = _kv()
     return _as_bool(kv.get(KEY_SHOW_GUIDE_PAGE, "false"))
-
-
-def sst_single_ack_button() -> bool:
-    """SST : un seul bouton valide toutes les consignes d’un coup (défaut : True). Si False, un bouton par consigne."""
-    kv = _kv()
-    return _as_bool(kv.get(KEY_SST_SINGLE_ACK_BUTTON, "true"))
 
 
 def persist_experience_flags(

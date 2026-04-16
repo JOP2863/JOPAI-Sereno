@@ -18,8 +18,8 @@ from sereno_core.experience_settings import (
     show_brand_suffix_in_titles,
     show_guide_page,
     show_watermark,
-    sst_single_ack_button,
 )
+from sereno_core.sst_ack_settings import sst_single_ack_button
 from sereno_core.jopai_brand_html import page_title_h1_html
 from sereno_core.proto_state import (
     JOURNEY_PRESET_CUSTOM,
